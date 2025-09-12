@@ -1,0 +1,8 @@
+# Depending on Domain to wipe, change the grep line.
+# --------------------------------------------------------------------
+for vmid in $(qm list | awk '{print $1}' | grep '^100[0-9][0-9]'); do
+    echo "Stopping VM $vmid..."
+    qm stop $vmid
+    echo "Deleting VM $vmid..."
+    qm destroy $vmid
+done
