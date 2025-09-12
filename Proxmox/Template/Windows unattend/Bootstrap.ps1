@@ -65,24 +65,62 @@ if ($null -ne $MediaDrive.Name) {
     }
 
     # Address Prefix
-    $ServerPrefix = Get-NetworkPrefix $Address
+    $ServerPrefix = Get-NetworkPrefix $Address #="10.36.100.111"
 
     # DNSServers Prefix (Unique)
-    $DnsPrefixes = $DNSServers | orEach-Object { Get-NetworkPrefix $_ } | Sort-Object -Unique
+    $DnsPrefixes = $DNSServers | ForEach-Object { Get-NetworkPrefix $_ } | Sort-Object -Unique
 
     if ($DnsPrefixes -contains $ServerPrefix) {
 
         # Domain Join
         # ------------------------------------------------------------
-        
         $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $CryptPassword)
-        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials -Restart
+        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials
 
     } else {
 
         # First Domain Controller or Workgroup
         # ------------------------------------------------------------
-        Rename-Computer -ComputerName $HostName -Restart
+        Rename-Computer -ComputerName $HostName
 
     }
+
+
+    # Get Server Config file, if any exists
+    # ------------------------------------------------------------
+    try {
+
+        # Get the file list at root of repo
+        # ------------------------------------------------------------
+        $Uri = "https://api.github.com/repos/SysAdminDk/LAB-Deployment/contents/Windows%20Servers?ref=main"
+        $Files = Invoke-RestMethod -Uri $Uri -Headers @{ "User-Agent" = "Powershell" }
+
+        $DownloadFile = $Files | Where-Object { $_.name -eq "$Hostname.ps1" }
+        if ($null -eq $DownloadFile) {
+
+            $HostPrefix = $($Hostname -split("-"))[0]
+            $DownloadFile = $Files | Where-Object { $_.name -eq "$HostPrefix-0x.ps1" }
+        }
+        
+        # Download selected file
+        # ------------------------------------------------------------
+        Invoke-WebRequest -Uri $DownloadFile.download_url -OutFile "C:\Scripts\$Hostname.ps1"
+
+
+        # Add Run Once registry key
+        # ------------------------------------------------------------
+        $RegPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce"
+        $Value   = "powershell.exe -ExecutionPolicy Bypass -File `"$ScriptPath`""
+
+        Set-ItemProperty -Path $RegPath -Name "Install Server Roles" -Value $Value
+
+    }
+    catch {
+    }
+
+
+    # Restart to Activate Rename / Domain Join
+    # ------------------------------------------------------------
+    & Shutdown -r -t 5
+
 }
