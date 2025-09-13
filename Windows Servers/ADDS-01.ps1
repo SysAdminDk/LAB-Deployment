@@ -11,33 +11,13 @@
 
 #>
 
-# Restart the script as Admin, if needed.
-# ------------------------------------------------------------
-$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-If (!($currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))) {
-
-    Write-Output ""
-    Write-Warning "Restarting script as Administrator"
-
-    if (!(Test-Path -Path "$($ENV:PUBLIC)\Downloads\$($MyInvocation.MyCommand.name)")) {
-        Copy-item -Path $PSCommandPath -Destination "$($ENV:PUBLIC)\Downloads\$($MyInvocation.MyCommand.name)" | Out-Null
-    }
-
-    $PSHost = If ($PSVersionTable.PSVersion.Major -le 5) {'PowerShell'} Else {'PwSh'}
-    Start-Process -Verb RunAs $PSHost (" -File `"$($ENV:PUBLIC)\Downloads\$($MyInvocation.MyCommand.name)`"")
-
-    Start-Sleep -Seconds 5
-    break
-}
-
-
 # Required parameters.
 # --------------------------------------------------------------------------------------------------
 $UserPassword = "DefaultPasswordReplace"
 $DomainName = "DefaultDomainNameReplace"
 
 
-# Cleanup if Domain is up and running.
+# Cleanup when Domain is up and running.
 # --------------------------------------------------------------------------------------------------
 Try {
     $DomainQuery = Get-ADDomain -Identity $DomainName -ErrorAction SilentlyContinue

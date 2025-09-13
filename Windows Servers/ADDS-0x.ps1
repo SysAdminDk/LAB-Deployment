@@ -10,6 +10,7 @@
     Install & Configure Additional Domain Controllers.
 #>
 
+# Verify Domain Membership
 # ------------------------------------------------------------
 if (!((gwmi win32_computersystem).partofdomain)) {
     
