@@ -81,7 +81,7 @@ if ($null -ne $MediaDrive.Name) {
 
         # First Domain Controller or Workgroup
         # ------------------------------------------------------------
-        Rename-Computer -ComputerName $HostName
+        Rename-Computer -NewName $HostName
 
     }
 
