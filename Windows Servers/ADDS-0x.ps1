@@ -7,14 +7,13 @@
     |___/ \___/|_| |_| |_|\__,_|_|_| |_|  \____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|  |___/
 
 
+    Install & Configure Additional Domain Controllers.
 #>
 
-
-# Install & Configure Domain Controller.
 # ------------------------------------------------------------
 if (!((gwmi win32_computersystem).partofdomain)) {
     
-    Throw "Domain join have failed"
+    Throw "Domain join have must have failed"
 
 }
 
