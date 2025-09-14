@@ -11,10 +11,23 @@
 
 #>
 
-# Required parameters.
+# Find Cloud Init Media Drive.
 # --------------------------------------------------------------------------------------------------
-$UserPassword = "DefaultPasswordReplace"
-$DomainName = "DefaultDomainNameReplace"
+$MediaDrive = Get-WmiObject -Class Win32_volume -Filter "DriveType = '5'"
+if ($null -ne $MediaDrive.Name) {
+
+    # Get content from User Data
+    # --------------------------------------------------------------------------------------------------
+    $HostConfig = Get-Content -Path $(Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "USER_DATA").FullName
+
+
+    # Extract values from User Data
+    # ------------------------------------------------------------
+    $DomainName = ((($HostConfig | Where {$_ -like "*fqdn*"}) -Replace("^(?:\w+):\s","") -split("\."))[1..99]) -join(".")
+    $Username = (($HostConfig | Where {$_ -like "*user*"})[0]) -Replace("^(?:\w+):\s","")
+    $Password = ($HostConfig | Where {$_ -like "*password*"}) -Replace("^(?:\w+):\s","")
+}
+
 
 
 # Cleanup when Domain is up and running.
@@ -66,7 +79,7 @@ if (!((gwmi win32_computersystem).partofdomain)) {
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultUserName" -value $env:USERNAME -Force
     }
     if ( (!($AutoLoginData.DefaultPassword)) -or ($AutoLoginData.DefaultPassword -ne $UserPassword) ) {
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Value $UserPassword -Force
+        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Value $Password -Force
     }
     if ($AutoLoginData.DefaultDomainName -ne $Netbios) {
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultDomainName" -value $Netbios -Force

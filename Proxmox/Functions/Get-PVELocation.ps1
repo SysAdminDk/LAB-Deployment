@@ -2,7 +2,9 @@
     [CmdletBinding()]
     Param(
         [Parameter(Position=0,Mandatory)][string]$ProxmoxAPI,
-        [Parameter(Position=1,Mandatory)][object]$Headers
+        [Parameter(Position=1,Mandatory)][object]$Headers,
+        $ExcludeNode,
+        $IncludeNode
     )
 
 
@@ -102,6 +104,10 @@
         }
     }
 
-    $VMLocation = $Result | Out-GridView -Title "Select Node, Storage and network for the new VM" -OutputMode Single
+    if ($null -ne $IncludeNode) {
+        $VMLocation = $Result | Where {$_.name -eq $IncludeNode} | Out-GridView -Title "Select Node, Storage and network for the new VM" -OutputMode Single
+    } else {
+        $VMLocation = $Result | Where {$_.name -ne $ExcludeNode} | Out-GridView -Title "Select Node, Storage and network for the new VM" -OutputMode Single
+    }
     return $VMLocation
 }

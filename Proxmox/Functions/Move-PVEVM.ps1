@@ -3,14 +3,19 @@
     Param(
         [Parameter(Mandatory)][string]$ProxmoxAPI,
         [Parameter(Mandatory)][object]$Headers,
+        [Parameter(Mandatory)][string]$VMID,
         [Parameter(Mandatory)][string]$SourceNode,
         [Parameter(Mandatory)][string]$TargetNode,
-        [Parameter(Mandatory)][string]$VMID,
+        [string]$Targetstorage,
         [switch]$Wait
     )
 
     $body = "vmid=$VMID"
     $body += "&target=$TargetNode"
+    if ($Targetstorage) {
+        $body += "&targetstorage=$Targetstorage"
+    }
+
     try {
         $MoveStatus = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$VMID/migrate" -Body $body -Method Post -Headers $Headers
     }
