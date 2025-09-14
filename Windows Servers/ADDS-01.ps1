@@ -89,7 +89,7 @@ if (!((gwmi win32_computersystem).partofdomain)) {
     # Registry Run
     # --------------------------------------------------------------------------------------------------
     if (!(Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -ErrorAction SilentlyContinue)) {
-        New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -Value "Powershell.exe -ExecutionPolicy Bypass -File `"C:\TS-Data\Create-Domain.ps1`"" | Out-Null
+        New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -Value "Powershell.exe -ExecutionPolicy Bypass -File `"C:\Scripts\ADDS-01.ps1`"" | Out-Null
     }
 
 
