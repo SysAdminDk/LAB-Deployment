@@ -67,36 +67,6 @@ if ($null -ne $MediaDrive.Name) {
     $CryptPassword = ConvertTo-SecureString $Password -AsPlainText -Force
     Set-LocalUser -Name $Username -Password $CryptPassword
 
-    
-
-    # If DNS server is on same subnet, Domain Join..
-    # ------------------------------------------------------------
-    function Get-NetworkPrefix {
-        param([string]$Ip)
-        return ($Ip -split '\.')[0..2] -join "."
-    }
-
-    # Address Prefix
-    $ServerPrefix = Get-NetworkPrefix $Address #="10.36.100.111"
-
-    # DNSServers Prefix (Unique)
-    $DnsPrefixes = $DNSServers | ForEach-Object { Get-NetworkPrefix $_ } | Sort-Object -Unique
-
-    if ($DnsPrefixes -contains $ServerPrefix) {
-
-        # Domain Join
-        # ------------------------------------------------------------
-        $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $CryptPassword)
-        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials
-
-    } else {
-
-        # First Domain Controller or Workgroup
-        # ------------------------------------------------------------
-        Rename-Computer -NewName $HostName
-
-    }
-
 
     # Verify Internet Access.
     # ------------------------------------------------------------
@@ -114,7 +84,6 @@ if ($null -ne $MediaDrive.Name) {
     if (-not $NetworkTest.TcpTestSucceeded) {
         throw "Timeout waiting for $HostToCheck on port $Port"
     }        
-
 
 
     # Get Server Config file, if any exists
@@ -137,16 +106,70 @@ if ($null -ne $MediaDrive.Name) {
         # ------------------------------------------------------------
         Invoke-WebRequest -Uri $DownloadFile.download_url -OutFile "C:\Scripts\$Hostname.ps1"
 
-        Invoke-Expression -Command "C:\Scripts\$Hostname.ps1"
 
+        # Get Domain Name from DNS Suffix
+        # --------------------------------------------------------------------------------------------------
+        $Netbios = $(($DomainName -split("\."))[0]).ToUpper()
+
+
+        # Enabled Autologin
+        # --------------------------------------------------------------------------------------------------
+        $AutoLoginData = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
+
+        if ($AutoLoginData.AutoLogonCount -le 2) {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoLogonCount" -value 3
+        }
+        if ($AutoLoginData.AutoAdminLogon -eq 0) {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoAdminLogon" -value 1
+        }
+        if ($AutoLoginData.DefaultUserName -ne $env:USERNAME) {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultUserName" -value $env:USERNAME -Force
+        }
+        if ( (!($AutoLoginData.DefaultPassword)) -or ($AutoLoginData.DefaultPassword -ne $UserPassword) ) {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Value $Password -Force
+        }
+        if ($AutoLoginData.DefaultDomainName -ne $Netbios) {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultDomainName" -value $Netbios -Force
+        }
+
+
+        # Registry Run
+        # --------------------------------------------------------------------------------------------------
+        if (!(Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -ErrorAction SilentlyContinue)) {
+            New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -Value "Powershell.exe -ExecutionPolicy Bypass -File `"C:\Scripts\$Hostname.ps1`"" | Out-Null
+        }
 
     }
     catch {
     }
 
 
-    # Restart to Activate Rename / Domain Join
+    # If DNS server is on same subnet, Domain Join..
     # ------------------------------------------------------------
-    & Shutdown -r -t 5
+    function Get-NetworkPrefix {
+        param([string]$Ip)
+        return ($Ip -split '\.')[0..2] -join "."
+    }
 
+
+    # Address Prefix
+    # ------------------------------------------------------------
+    $ServerPrefix = Get-NetworkPrefix $Address
+    $DnsPrefixes = $DNSServers | ForEach-Object { Get-NetworkPrefix $_ } | Sort-Object -Unique
+
+
+    if ($DnsPrefixes -contains $ServerPrefix) {
+
+        # Domain Join
+        # ------------------------------------------------------------
+        $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $CryptPassword)
+        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials -Restart
+
+    } else {
+
+        # First Domain Controller or Workgroup
+        # ------------------------------------------------------------
+        Rename-Computer -NewName $HostName -Restart
+
+    }
 }
