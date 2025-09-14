@@ -7,14 +7,19 @@
 Get-ChildItem -Path "D:\PVE Scripts\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
 
 
+# Connect to PVE Cluster
+# ------------------------------------------------------------
 $PVEConnect = PVE-Connect -Authkey "root@pam!Powershell=16dcf2b5-1ca1-41cd-9e97-3c1d3d308ec0" -Hostaddr "10.36.1.27"
-$PVELocation = Get-PVELocation -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers
-# ^^ Change this to same location as LAB-Deplpoy, no need to ask...
 
 
 # Get Id of Deployment server....
 # ------------------------------------------------------------
 $MasterID = Get-PVEServerID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -ServerName "LAB-Deploy"
+
+
+# Get information required to create the template (VM)
+# ------------------------------------------------------------
+$PVELocation = Get-PVELocation -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -IncludeNode $MasterID.Node
 
 
 <#
@@ -30,7 +35,8 @@ $VMName = "2025-Template"
 $Memory = 8*1024
 $Cores = 4
 $OSDisk = 50
-$TemplateID = Get-Random -Minimum 99999989 -Maximum 99999999
+$TemplateID = Get-PVENextID -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers)
+
 
 
 # Default Template Configuration

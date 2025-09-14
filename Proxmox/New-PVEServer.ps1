@@ -1,9 +1,9 @@
 ﻿param (
     [cmdletbinding()]
     [Parameter(ValueFromPipeline)]
-    [string]$NewVMFQDN="ADDS-01.Fabric.SecInfra.Dk",
+    [string]$NewVMFQDN="ADDS-02.Fabric.SecInfra.Dk",
     [string]$MachineOU=$null,
-    [string]$NewVmIp="10.36.100.11",
+    [string]$NewVmIp="10.36.100.12",
     [string]$LocalUsername="Administrator",
     [string]$LocalPassword="P@ssword2025.!!",
     [int]$VMMemory=4,
@@ -143,8 +143,7 @@ If ($MasterServer.Node -ne $SelectedVMTemplate.Node) {
 
 #>
 
-
-$AllVMIDs = (Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu" -Headers $PVEConnect.Headers).data | Select-Object vmid, name
+$AllVMIDs = (Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/cluster/resources?type=vm" -Headers $($PVEConnect.Headers)).data | Select-Object vmid, name
 if ($AllVMIDs.vmid -contains $VMID) {
     throw "VMID already in use."
 
@@ -254,14 +253,14 @@ if ($VmDomain -ne "Workgroup") {
     
 
     switch ($VMName) {
-        {$_ -like "ADDS-*"} { 
-            Write-Host "Add 10Gb NTDS Drive"
-
-            $DiskId = $StorageController + $VMDiskCount
-            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):10"))" -Method Post -Headers $PVEConnect.Headers
-            $VMDiskCount++
-
-        }
+#        {$_ -like "ADDS-*"} { 
+#            Write-Host "Add 10Gb NTDS Drive"
+#
+#            $DiskId = $StorageController + $VMDiskCount
+#            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):10"))" -Method Post -Headers $PVEConnect.Headers
+#            $VMDiskCount++
+#
+#        }
         {$_ -eq "ADDS-01"} {
             Write-Host "Add 100Gb Backup Drive"
 
