@@ -75,7 +75,7 @@ Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -no
 
 # Move OS disk to THIS server.
 # ------------------------------------------------------------
-$TmpDiskID = Reassign-PVEOwner -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -SourceNode $MasterID.Node -SourceVM $TemplateID -TargetVM $MasterID.VmID
+$TmpDiskID = Reassign-PVEOwner -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -SourceNode $MasterID.Node -SourceVM $TemplateID -TargetVM $MasterID.VmID -Wait
 
 
 # Pause 5 sec, need PnP to work
@@ -198,7 +198,7 @@ if ($null -eq $VHDDrive) {
 
 # Move Disk to template.
 # ------------------------------------------------------------
-$OrgDiskID = Reassign-PVEOwner -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -SourceNode $MasterID.Node -SourceVM $MasterID.VmID -TargetVM $TemplateID -SourceDisk $TmpDiskID
+$OrgDiskID = Reassign-PVEOwner -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -SourceNode $MasterID.Node -SourceVM $MasterID.VmID -TargetVM $TemplateID -SourceDisk $TmpDiskID -Wait
 
 
 # Add virtio0 to boot..
@@ -210,24 +210,3 @@ $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($MasterID.Node)/qe
 # Convert TO template
 # ------------------------------------------------------------
 $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($MasterID.Node)/qemu/$TemplateID/template" -Method POST -Headers $($PVEConnect.Headers)
-
-
-<# 
-
-    Wait with this until the first VM have been tested !!
-
-#>
-<#
-# Clone and migrate to partner node(s)
-# ------------------------------------------------------------
-$CopyLocation = Get-PVELocation -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -ExcludeNode $($PVELocation.name)
-
-$NextTemplateID = Get-Random -Minimum 999999989 -Maximum 999999999
-
-$CloneTemplate = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$TemplateID/clone" -Body "newid=$NextTemplateID&name=$VMName&full=1&storage=$($PVELocation.storage)" -Method POST -Headers $PVEConnect.Headers
-Start-PVEWait -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -Node $($PVELocation.name) -Taskid $CloneTemplate.data
-
-Move-PVEVM -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -SourceNode $SelectedVMTemplate.Node -TargetNode $CopyLocation.Name -VMID $NextTemplateID -Targetstorage $CopyLocation.Storage # -Wait
-
-$null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($CopyLocation.Name)/qemu/$NextTemplateID/template" -Method POST -Headers $($PVEConnect.Headers)
-#>

@@ -155,20 +155,14 @@ Write-Verbose "Proxmox: Create new VM: $VMName"
 $VMCreate=$null
 $VMStatus=$null
 
-#try {
-#    $VMStatus = ((Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Headers $PVEConnect.Headers -Verbose:$false | ConvertFrom-Json)[0]).data
-#}
-#catch {
-#    try {
-        # Clone template
-        $VMCreate = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$($SelectedVMTemplate.VmID)/clone" -Body "newid=$VMID&name=$NewVMFQDN&full=1&storage=$($PVELocation.storage)" -Method Post -Headers $PVEConnect.Headers -Verbose:$false
+# Clone Template
+# ------------------------------------------------------------
+$VMCreate = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$($SelectedVMTemplate.VmID)/clone" -Body "newid=$VMID&name=$NewVMFQDN&full=1&storage=$($PVELocation.storage)" -Method Post -Headers $PVEConnect.Headers -Verbose:$false
 
-        # Wait for clone...
-        Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -node $($PVELocation.name) -taskid $VMCreate.data
-#    }
-#    catch {
-#    }
-#}
+# Wait for clone...
+# ------------------------------------------------------------
+Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -node $($PVELocation.name) -taskid $VMCreate.data
+
 
 
 # Add Cloud Init drive, with bare minimum data.
@@ -253,39 +247,21 @@ if ($VmDomain -ne "Workgroup") {
     
 
     switch ($VMName) {
-#        {$_ -like "ADDS-*"} { 
-#            Write-Host "Add 10Gb NTDS Drive"
-#
-#            $DiskId = $StorageController + $VMDiskCount
-#            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):10"))" -Method Post -Headers $PVEConnect.Headers
-#            $VMDiskCount++
-#
-#        }
-        {$_ -eq "ADDS-01"} {
-            Write-Host "Add 100Gb Backup Drive"
+        {$_ -like "ADDS-*"} {
 
+            # Add 100Gb Backup Drive to All Domain Controllers.
+            # ------------------------------------------------------------
             $DiskId = $StorageController + $VMDiskCount
             $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):100"))" -Method Post -Headers $PVEConnect.Headers
             $VMDiskCount++
 
         }
-        {$_ -like "File-0*"} {
-            Write-Host "Add 10Gb and 100Gb Data Drive"
-
+        {$_ -like "File-0*" -or $_ -like "*RDDB-*"} {
+            
+            # Add 10Gb Log Drive and 100Gb Data Drive to File Cluster and SQL Cluster
+            # ------------------------------------------------------------
             $DiskId = $StorageController + $VMDiskCount
             $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):20"))" -Method Post -Headers $PVEConnect.Headers
-            $VMDiskCount++
-
-            $DiskId = $StorageController + $VMDiskCount
-            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):100"))" -Method Post -Headers $PVEConnect.Headers
-            $VMDiskCount++
-
-        }
-        {$_ -like "*RDDB-*"} {
-            Write-Host "Add 10Gb and 100Gb Data Drive"
-
-            $DiskId = $StorageController + $VMDiskCount
-            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):10"))" -Method Post -Headers $PVEConnect.Headers
             $VMDiskCount++
 
             $DiskId = $StorageController + $VMDiskCount
