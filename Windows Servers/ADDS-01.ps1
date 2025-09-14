@@ -218,7 +218,7 @@ if ((gwmi win32_computersystem).partofdomain) {
 
     # Create inital users
     # --------------------------------------------------------------------------------------------------
-    $SecurePassword = ConvertTo-SecureString -string $UserPassword -AsPlainText -Force
+    $SecurePassword = ConvertTo-SecureString -string $Password -AsPlainText -Force
     New-ADUser -AccountPassword $SecurePassword -ChangePasswordAtLogon $false -DisplayName "T0-Admin" -Enabled $true -Name "T0-ADMIN" -SamAccountName "T0-Admin" -UserPrincipalName "T0-Admin@$($ENV:USERDNSDOMAIN)" -PasswordNeverExpires $True -Path "OU=AdminAccounts,$($Tier0Path.DistinguishedName)"
 #    New-ADUser -AccountPassword $SecurePassword -ChangePasswordAtLogon $false -DisplayName "Con-User" -Enabled $true -Name "Con-User" -SamAccountName "Con-User" -UserPrincipalName "Con-User@$($ENV:USERDNSDOMAIN)" -PasswordNeverExpires $True -Path "OU=ConnectionAccounts,$($AdminPath.DistinguishedName)"
 
@@ -313,51 +313,11 @@ if ((gwmi win32_computersystem).partofdomain) {
 
 <#
 
-    AD Backup Section
-
-#>
-
-    # Ensure Windows Server Backup is installed
-    # ------------------------------------------------------------
-    if (!(Get-Command Start-WBBackup -ErrorAction SilentlyContinue)) {
-        Install-WindowsFeature -Name Windows-Server-Backup -IncludeManagementTools
-    }
-
-    # Setup Scheduled backup
-    # ------------------------------------------------------------
-    $Disk = Get-WBDisk | Where { $_.TotalSpace -gt (Get-Partition | Where {$_.DriveLetter -eq "C"} | Get-Disk).Size }
-    if ($Disk.count -gt 1) {
-        throw "Multiple disks found, please ensure there is only one"
-        break
-    }
-    $DiskInfo = Get-Disk -Number $Disk.DiskNumber
-
-    if ($DiskInfo.OperationalStatus -ne "Online") {
-        Get-Disk -Number $Drives.DiskNumber | Set-Disk -IsOffline:$False
-        $DiskInfo | Initialize-Disk
-        $DiskInfo | Clear-Disk
-    }
-
-    if ($null -ne $Disk) {
-                
-        if (!(Get-WBPolicy)) {
-            & wbadmin enable backup -addtarget:"{$($Disk.DiskId.Guid)}" -Schedule:22:00 -allCritical -quiet
-        } else {
-            Write-Warning "Backup already configured, please check configuration."
-            Get-WBPolicy
-        }
-
-    } else {
-        Write-Warning "No AD Backup configured"
-    }
-
-
-
-<#
-
     NTDS move Section
+    - Skip this we are on NVME in 2025....
 
 #>
+<#
 
     $CurrentPath = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\NTDS\Parameters" -Name "DSA Working Directory")."DSA Working Directory"
     If ($CurrentPath -like "*Windows*") {
@@ -403,6 +363,47 @@ if ((gwmi win32_computersystem).partofdomain) {
         Start-Sleep -Seconds 30
 
     }
+#>
+<#
+
+    AD Backup Section
+
+#>
+
+    # Ensure Windows Server Backup is installed
+    # ------------------------------------------------------------
+    if (!(Get-Command Start-WBBackup -ErrorAction SilentlyContinue)) {
+        Install-WindowsFeature -Name Windows-Server-Backup -IncludeManagementTools
+    }
+
+    # Setup Scheduled backup
+    # ------------------------------------------------------------
+    $Disk = Get-WBDisk | Where { $_.TotalSpace -gt (Get-Partition | Where {$_.DriveLetter -eq "C"} | Get-Disk).Size }
+    if ($Disk.count -gt 1) {
+        throw "Multiple disks found, please ensure there is only one"
+        break
+    }
+    $DiskInfo = Get-Disk -Number $Disk.DiskNumber
+
+    if ($DiskInfo.OperationalStatus -ne "Online") {
+        Get-Disk -Number $Disk.DiskNumber | Set-Disk -IsOffline:$False
+        $DiskInfo | Initialize-Disk
+        $DiskInfo | Clear-Disk -Confirm:0
+    }
+
+    if ($null -ne $Disk) {
+                
+        if (!(Get-WBPolicy)) {
+            & wbadmin enable backup -addtarget:"{$($Disk.DiskId.Guid)}" -Schedule:22:00 -allCritical -quiet
+        } else {
+            Write-Warning "Backup already configured, please check configuration."
+            Get-WBPolicy
+        }
+
+    } else {
+        Write-Warning "No AD Backup configured"
+    }
+
 
     # Script done, close console connection.
     # --------------------------------------------------------------------------------------------------
