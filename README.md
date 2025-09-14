@@ -8,3 +8,4 @@ Scripts in the Proxmox folder contains the functions to create Default Server Te
 Script in the Windows Servers contains individual server scripts.  
   
   
+## To get started.
