@@ -10,6 +10,7 @@
     Install & Configure Additional Domain Controllers.
 #>
 
+
 # Verify Domain Membership
 # ------------------------------------------------------------
 if (!((gwmi win32_computersystem).partofdomain)) {
@@ -38,48 +39,24 @@ if ((gwmi win32_computersystem).partofdomain) {
     # ------------------------------------------------------------
     Install-ADDSDomainController -DomainName $ENV:USERDNSDOMAIN -SafeModeAdministratorPassword $SecurePassword -NoRebootOnCompletion -Confirm:$false -Credential $Credentials
 
-
-
-<#
-
-    Backup Section
-
-#>
-
-    # Ensure Windows Server Backup is installed
-    # ------------------------------------------------------------
-    if (!(Get-Command Start-WBBackup -ErrorAction SilentlyContinue)) {
-        Install-WindowsFeature -Name Windows-Server-Backup -IncludeManagementTools
-    }
-
-    # Setup Scheduled backup
-    # ------------------------------------------------------------
-    $Disk = Get-WBDisk | Where { $_.TotalSpace -gt (Get-Partition | Where {$_.DriveLetter -eq "C"} | Get-Disk).Size }
-    if ($Disk.count -gt 1) {
-        throw "Multiple disks found, please ensure there is only one"
-        break
-    }
-    $DiskInfo = Get-Disk -Number $Disk.DiskNumber
-
-    if ($DiskInfo.OperationalStatus -ne "Online") {
-        Get-Disk -Number $Drives.DiskNumber | Set-Disk -IsOffline:$False
-        $DiskInfo | Initialize-Disk
-        $DiskInfo | Clear-Disk
-    }
-
-    if ($null -ne $Disk) {
-                
-        if (!(Get-WBPolicy)) {
-            & wbadmin enable backup -addtarget:"{$($Disk.DiskId.Guid)}" -Schedule:22:00 -allCritical -quiet
-        } else {
-            Write-Warning "Backup already configured, please check configuration."
-            Get-WBPolicy
-        }
-
-    } else {
-        Write-Warning "No AD Backup configured"
-    }
-
-
 }
 
+
+
+# Cleanup when Domain is up and running.
+# --------------------------------------------------------------------------------------------------
+Try {
+    $DomainQuery = Get-ADDomain -Identity $DomainName -ErrorAction SilentlyContinue
+}
+Catch {
+    Write-Host "Domain not created yet, continue script"
+}
+
+if ( ((gwmi win32_computersystem).partofdomain) -and ($null -ne $DomainQuery) ) {
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "AutoAdminLogon" -value 0
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "AutoLogonCount" -value 0
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "DefaultUserName " -value ""
+    Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Force -ErrorAction SilentlyContinue
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "DefaultDomainName" -value ""
+    Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -Force -ErrorAction SilentlyContinue
+}
