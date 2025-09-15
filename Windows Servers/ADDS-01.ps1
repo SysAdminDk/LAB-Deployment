@@ -46,7 +46,6 @@ if ( ((gwmi win32_computersystem).partofdomain) -and ($null -ne $DomainQuery) ) 
     Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Force -ErrorAction SilentlyContinue
     Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "DefaultDomainName" -value ""
     Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -Force -ErrorAction SilentlyContinue
-    Break
 }
 
 
@@ -156,7 +155,6 @@ if (!((gwmi win32_computersystem).partofdomain)) {
         }    
         break
     }
-
 }
 
 
@@ -311,59 +309,6 @@ if ((gwmi win32_computersystem).partofdomain) {
     }
 
 
-<#
-
-    NTDS move Section
-    - Skip this we are on NVME in 2025....
-
-#>
-<#
-
-    $CurrentPath = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\NTDS\Parameters" -Name "DSA Working Directory")."DSA Working Directory"
-    If ($CurrentPath -like "*Windows*") {
-
-        # If any MEDIA on D, Move the drive letter
-        $MediaDrive = Get-WmiObject -Class Win32_volume -Filter "DriveType = '5' and DriveLetter != 'X:'"
-        if ($null -ne $MediaDrive) {
-            Set-WmiInstance -InputObject $MediaDrive -Arguments @{DriveLetter='X:'} | Out-Null
-        }
-
-        # Prep the drive.
-        $Disk = Get-Disk | Where {$_.PartitionStyle -eq "RAW"} | Initialize-Disk -PassThru | New-Partition -UseMaximumSize -AssignDriveLetter | Format-Volume -FileSystem NTFS -NewFileSystemLabel "NTDS Disk" -Confirm:$false
-        if ($Disk.count -gt 1) {
-            throw "Multiple disks found, please ensure there is only one"
-            break
-        }
-        if ($null -eq $Disk) {
-            Write-Warning "No disk suitable for NTDS"
-            break
-        }
-
-        # Create Folder
-        if (!(Test-Path -Path "$($Disk.DriveLetter):\NTDS")) {
-            New-Item -Path "$($Disk.DriveLetter):\NTDS\" -ItemType Directory | Out-Null
-        }
-
-        # Stop AD
-        Get-Service -Name NTDS | Stop-Service -Force
-
-        $Commands = @()
-        $Commands += "activate instance ntds"
-        $Commands += "files"
-        $Commands += "move db to $($Disk.DriveLetter):\NTDS"
-        $Commands += "move logs to $($Disk.DriveLetter):\NTDS"
-        $Commands += "quit"
-        $Commands += "quit"
-
-        & ntdsutil $commands
-
-        # Start AD
-        Get-Service -Name NTDS | Start-Service
-
-        Start-Sleep -Seconds 30
-
-    }
-#>
 <#
 
     AD Backup Section
