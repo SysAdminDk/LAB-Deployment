@@ -15,85 +15,27 @@
 
 #>
 
-# Select management servers for tier 1
-# ------------------------------------------------------------
-$Tier1JumpStations = $($ServerInfo | Where {$_.Role -eq "MGMT"}) | Out-GridView -Title "Select the Tier 1 Jump / Management Servers" -OutputMode Multiple
+if ((gwmi win32_computersystem).partofdomain) {
 
-
-# Install RSAT tools on Tier 1
-# ------------------------------------------------------------
-$($Tier1JumpStations).Name | Get-ADComputer -ErrorAction SilentlyContinue | Foreach {
-
-    If ( ($Null -ne $TargetPath) -and ($($_.DistinguishedName) -NotLike "*OU=JumpStations,OU=Tier1*") ) {
-        Move-ADObject -Identity $($_.DistinguishedName) -TargetPath $(Get-ADOrganizationalUnit -Filter "Name -eq 'JumpStations'" -SearchBase "OU=Tier1,$TierSearchBase").DistinguishedName
-    }
-    
-    
-    # Add to Silo.
+    # Selected RSAT tools
     # ------------------------------------------------------------
-    Set-TSxAdminADAuthenticationPolicySiloForComputer -ADComputerIdentity $($_.Name) -Tier T1
+    $ToolsToInstall = @("RSAT-*","GPMC")
+    Get-WindowsFeature -Name $ToolsToInstall | Where {$_.InstallState -eq "Available"} | Install-WindowsFeature -Verbose -ErrorAction SilentlyContinue
 
 
-    # Connect to the server.
-    # ------------------------------------------------------------
-    $Session = New-PSSession -ComputerName "$($_.DNSHostName)"
+    $ServerQuery = Get-ADComputer -Identity $env:COMPUTERNAME
+    $TierSearchBase = Get-ADOrganizationalUnit -Identity "OU=Admin,$((Get-ADDomain).DistinguishedName)"
 
-
-    # Copy required installers to target server
-    # ------------------------------------------------------------
-    $FilesToCopy = @(
-        "AzureConnectedMachineAgent.msi",
-        "Setup.RemoteDesktopManager.exe",
-        "windowsdesktop-runtime-8.0.6-win-x64.exe"
-    )
-
-    $FilesToCopy | Foreach {
-        Get-ChildItem -Path $TxScriptPath -Filter $_ -Recurse | Copy-Item -Destination "$($ENV:PUBLIC)\downloads\$_" -ToSession $Session -Force
+    If ($($ServerQuery.DistinguishedName) -NotLike "*OU=JumpStations,OU=Tier1*") {
+        Move-ADObject -Identity $($ServerQuery.DistinguishedName) -TargetPath $(Get-ADOrganizationalUnit -Filter "Name -eq 'JumpStations'" -SearchBase "OU=Tier1,$TierSearchBase").DistinguishedName
     }
 
 
-    # Execute commands.
+    & Gpupdate /force
+
+
+    # Reboot to activate all changes.
     # ------------------------------------------------------------
-    Invoke-Command -Session $Session -ScriptBlock {
+    & shutdown -r -t 10
 
-
-        # Install Azure Arc Agent
-        # ------------------------------------------------------------
-        if (Test-Path -Path "$($ENV:PUBLIC)\downloads\AzureConnectedMachineAgent.msi") {
-            Start-Process -FilePath "$($ENV:PUBLIC)\downloads\AzureConnectedMachineAgent.msi" -ArgumentList "/quiet /qn /norestart" -wait
-        }
-
-
-        # Selected RSAT tools
-        # ------------------------------------------------------------
-        $ToolsToInstall = @(
-	        "RSAT-*",
-            "GPMC"
-	        )
-        Get-WindowsFeature -Name $ToolsToInstall | Where {$_.InstallState -eq "Available"} | Install-WindowsFeature -Verbose -ErrorAction SilentlyContinue
-        
-        & Gpupdate /force
-
-        & Gpupdate /force
-
-
-        # Install RDM
-        # ------------------------------------------------------------
-        if (Test-Path -Path "$($ENV:PUBLIC)\downloads\Setup.RemoteDesktopManager.exe") {
-            Start-Process -FilePath "$($ENV:PUBLIC)\downloads\Setup.RemoteDesktopManager.exe" -ArgumentList "/quiet /qn /norestart" -wait
-        }
-        if (Test-Path -Path "$($ENV:PUBLIC)\downloads\windowsdesktop-runtime-8.0.6-win-x64.exe") {
-            Start-Process -FilePath "$($ENV:PUBLIC)\downloads\windowsdesktop-runtime-8.0.6-win-x64.exe" -ArgumentList "/quiet /qn /norestart" -wait
-        }
-
-
-        # Cleanup files.
-        # ------------------------------------------------------------
-        Get-ChildItem -Path "$($ENV:PUBLIC)\downloads" -Recurse | Remove-Item
-
-
-        # Reboot to activate all changes.
-        # ------------------------------------------------------------
-        & shutdown -r -t 10
-    }
 }
