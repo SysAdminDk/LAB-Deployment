@@ -17,33 +17,21 @@
 
 if ((gwmi win32_computersystem).partofdomain) {
 
-    # Add to Silo !!!
-    # ------------------------------------------------------------
-    #Set-TSxAdminADAuthenticationPolicySiloForComputer -ADComputerIdentity $($_.Name) -Tier T0
-
-
     # Selected RSAT tools
     # ------------------------------------------------------------
-    $ToolsToInstall = @(
-	    "RSAT-*",
-        "GPMC"
-	    )
+    $ToolsToInstall = @("RSAT-*","GPMC")
     Get-WindowsFeature -Name $ToolsToInstall | Where {$_.InstallState -eq "Available"} | Install-WindowsFeature -Verbose -ErrorAction SilentlyContinue
-
-    & Gpupdate /force
-    & Gpupdate /force
 
 
     $ServerQuery = Get-ADComputer -Identity $env:COMPUTERNAME
-    If ($($ServerQuery.DistinguishedName) -NotLike "*OU=JumpStations,OU=Tier0*") {
-        Move-ADObject -Identity $($_.DistinguishedName) -TargetPath $(Get-ADOrganizationalUnit -Filter "Name -eq 'JumpStations'" -SearchBase "OU=Tier0,$TierSearchBase").DistinguishedName
+    $TierSearchBase = Get-ADOrganizationalUnit -Identity "OU=Admin,$((Get-ADDomain).DistinguishedName)"
+
+    If ($($ServerQuery.DistinguishedName) -NotLike "*OU=JumpStations,OU=Tier1*") {
+        Move-ADObject -Identity $($ServerQuery.DistinguishedName) -TargetPath $(Get-ADOrganizationalUnit -Filter "Name -eq 'JumpStations'" -SearchBase "OU=Tier0,$TierSearchBase").DistinguishedName
     }
 
 
-    # Install RDM
-    # ------------------------------------------------------------
-    #Start-Process -FilePath "$($ENV:PUBLIC)\downloads\windowsdesktop-runtime-8.0.6-win-x64.exe" -ArgumentList "/quiet /qn /norestart" -wait
-    #Start-Process -FilePath "$($ENV:PUBLIC)\downloads\Setup.RemoteDesktopManager.exe" -ArgumentList "/quiet /qn /norestart" -wait
+    & Gpupdate /force
 
 
     # Reboot to activate all changes.
