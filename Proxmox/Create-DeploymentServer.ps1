@@ -20,7 +20,7 @@
     Windows Installation, You know what to do :)
 
 
-    When Done, download required scripts
+    When Done, Download required scripts from Git...
 
 
 #>
