@@ -11,24 +11,6 @@
 
 #>
 
-# Find Cloud Init Media Drive.
-# --------------------------------------------------------------------------------------------------
-$MediaDrive = Get-WmiObject -Class Win32_volume -Filter "DriveType = '5'"
-if ($null -ne $MediaDrive.Name) {
-
-    # Get content from User Data
-    # --------------------------------------------------------------------------------------------------
-    $HostConfig = Get-Content -Path $(Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "USER_DATA").FullName
-
-
-    # Extract values from User Data
-    # ------------------------------------------------------------
-    $DomainName = ((($HostConfig | Where {$_ -like "*fqdn*"}) -Replace("^(?:\w+):\s","") -split("\."))[1..99]) -join(".")
-    $Username = (($HostConfig | Where {$_ -like "*user*"})[0]) -Replace("^(?:\w+):\s","")
-    $Password = ($HostConfig | Where {$_ -like "*password*"}) -Replace("^(?:\w+):\s","")
-}
-
-
 
 # Cleanup when Domain is up and running.
 # --------------------------------------------------------------------------------------------------
@@ -170,7 +152,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
         New-ADReplicationSubnet -Name $IPSubnet -Site $SiteName
     }
 
-
+<#
     # Create Simple Tiering OU structure
     # --------------------------------------------------------------------------------------------------
     New-ADOrganizationalUnit -Name "Admin" -Path $($DomainQuery.DistinguishedName)
@@ -203,7 +185,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     New-ADOrganizationalUnit -Name "FileServers" -Path $($Tier1Servers.DistinguishedName)
     New-ADOrganizationalUnit -Name "AzureGatewayServers" -Path $($Tier1Servers.DistinguishedName)
     New-ADOrganizationalUnit -Name "NetworkPolicyServers" -Path $($Tier1Servers.DistinguishedName)
-
+#>
 
     # Create inital users
     # --------------------------------------------------------------------------------------------------
@@ -221,7 +203,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     # Create GPO - Disable Server Manager
     # --------------------------------------------------------------------------------------------------
     $GPO = New-GPO -Name "Admin - Disable Server Manager"
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -Server $(Get-ADDomain).PDCEmulator -LinkEnabled Yes | Out-Null
+    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
     Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DistinguishedName -Server $(Get-ADDomain).PDCEmulator -LinkEnabled Yes | Out-Null
     (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
 
@@ -233,8 +215,8 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     # Create GPO - Enable Remote Desktop
     # --------------------------------------------------------------------------------------------------
     $GPO = New-GPO -Name "Admin - Enable Remote Desktop"
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -Server $(Get-ADDomain).PDCEmulator -LinkEnabled Yes | Out-Null
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DistinguishedName -Server $(Get-ADDomain).PDCEmulator -LinkEnabled Yes | Out-Null
+    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
+    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DistinguishedName -LinkEnabled Yes | Out-Null
     (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
 
     Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -ValueName "fDenyTSConnections" -Value 0 -Type DWord | Out-Null
@@ -246,7 +228,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     # Create GPO - Cleanup Server Desktop
     # --------------------------------------------------------------------------------------------------
     $GPO = New-GPO -Name "User - Cleanup Server Desktop"
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -Server $(Get-ADDomain).PDCEmulator -LinkEnabled Yes | Out-Null
+    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
     (Get-GPO -Name $GPO.DisplayName).GpoStatus = "ComputerSettingsDisabled"
 
     Set-GPPrefRegistryValue -Name $GPO.DisplayName -Key "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -ValueName HideFileExt -Value 0 -Type DWord -Action Update -Context User | Out-Null
@@ -258,7 +240,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     # Create GPO - Disable Cortana
     # --------------------------------------------------------------------------------------------------
     $GPO = New-GPO -Name "Computer - Disable Cortana"
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -Server $(Get-ADDomain).PDCEmulator -LinkEnabled Yes | Out-Null
+    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
     (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
 
     Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -ValueName AllowCortana -Value 0 -Type DWord | Out-Null
@@ -272,7 +254,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     # Create Windows Laps Policy
     # --------------------------------------------------------------------------------------------------
     $GPO = New-GPO -Name "[MDFT] - Windows LAPS Domain Controller"
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -Server $(Get-ADDomain).PDCEmulator -LinkEnabled Yes | Out-Null
+    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
     (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
 
     Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\LAPS" -ValueName ADBackupDSRMPassword -Value 1 -Type DWord | Out-Null
@@ -291,6 +273,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     }
 
 
+<#
     # Make DSC folders in Netlogon
     # --------------------------------------------------------------------------------------------------
     $DSCFiles = (Get-ChildItem -Path "$($ENV:SystemDrive)\Scripts\" -Recurse -Filter "*.mof")
@@ -298,7 +281,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
         New-Item -Path "C:\Windows\SYSVOL\domain\scripts\DSC-Files" -ItemType Directory | Out-Null
         $DSCFiles | ForEach-Object { Copy-Item $_.FullName -Destination "$VHDXVolume3\Scripts\MOF\" }
     }
-
+#>
 
 
     <#
