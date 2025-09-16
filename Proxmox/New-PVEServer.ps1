@@ -1,9 +1,9 @@
 ﻿param (
     [cmdletbinding()]
     [Parameter(ValueFromPipeline)]
-    [string]$NewVMFQDN="ADDS-02.Fabric.SecInfra.Dk",
+    [string]$NewVMFQDN="MGMT-01.Fabric.SecInfra.Dk",
     [string]$MachineOU=$null,
-    [string]$NewVmIp="10.36.100.12",
+    [string]$NewVmIp="10.36.100.31",
     [string]$LocalUsername="Administrator",
     [string]$LocalPassword="P@ssword2025.!!",
     [int]$VMMemory=4,
