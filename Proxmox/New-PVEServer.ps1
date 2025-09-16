@@ -1,16 +1,15 @@
 ﻿param (
     [cmdletbinding()]
     [Parameter(ValueFromPipeline)]
-    [string]$NewVMFQDN="MGMT-01.Fabric.SecInfra.Dk",
-    [string]$MachineOU=$null,
-    [string]$NewVmIp="10.36.100.31",
+    [string]$NewVMFQDN="ADDS-03.Fabric.SecInfra.Dk",
+    [string]$NewVmIp="10.36.100.13",
     [string]$LocalUsername="Administrator",
     [string]$LocalPassword="P@ssword2025.!!",
     [int]$VMMemory=4,
     [int]$VMCores=2,
     [string]$OSDisk="50Gb",
-    [object]$DefaultConnection,
-    [object]$DefaultLocation,
+    [object]$DefaultConnection=$PVEConnect,
+    [object]$DefaultLocation=$PVELocation,
     [switch]$Start
 )
 
@@ -79,7 +78,9 @@ if (!($DefaultConnection)) {
 
 # Get the Deployment server info
 # ------------------------------------------------------------
-$MasterServer = Get-PVEServerID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -ServerName "LAB-Deploy"
+IF (!($DefaultLocation)) {
+    $MasterServer = Get-PVEServerID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -ServerName "LAB-Deploy"
+}
 
 
 
@@ -102,8 +103,9 @@ if (!($DefaultLocation)) {
 
 # Find all templates
 # ------------------------------------------------------------
+$MasterServer.Node
 $Templates = Get-PVETemplates -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers | Where {$_.node -eq $MasterServer.Node}
-
+$Templates
 
 
 # Select the template to use.
