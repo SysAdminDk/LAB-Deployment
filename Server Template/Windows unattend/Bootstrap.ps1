@@ -40,9 +40,9 @@ foreach ($MediaDrive in $MediaDrives) {
             "[$(Get-Date)] Extracting Network Configuration" | Out-File -FilePath $LogFile -Append
 
             $DNSServers = ((($NetworkConfig | Where {$_ -like "*nameservers*"}) -replace("dns-nameservers","")).trim() -split "[ ,]+")
-            $IPGateway =  (($NetworkConfig  | Where {$_ -like "*gateway*"})     -replace("gateway","")).trim()
-            $IPAddress =  (($NetworkConfig  | Where {$_ -like "*address*"})     -replace("address","")).trim()
-            $IPNetmask =  (($NetworkConfig  | Where {$_ -like "*netmask*"})     -replace("netmask","")).trim()
+            $IPGateway  = (($NetworkConfig  | Where {$_ -like "*gateway*"})     -replace("gateway","")).trim()
+            $IPAddress  = (($NetworkConfig  | Where {$_ -like "*address*"})     -replace("address","")).trim()
+            $IPNetmask  = (($NetworkConfig  | Where {$_ -like "*netmask*"})     -replace("netmask","")).trim()
 
 
             # Apply NetConfig
@@ -72,13 +72,15 @@ foreach ($MediaDrive in $MediaDrives) {
             # ------------------------------------------------------------
             "[$(Get-Date)] Apply Network Configuration" | Out-File -FilePath $LogFile -Append
 
-            $HostName =   ($HostConfig  | Where {$_ -like "*hostname*"})   -Replace("^(?:\w+):\s","")
+            $HostName   = ($HostConfig  | Where {$_ -like "*hostname*"})   -Replace("^(?:\w+):\s","")
             $DomainName = (($HostConfig | Where {$_ -like "*fqdn*"})       -Replace("^(?:\w+):\s","") -split("\.", 2))[1]
-            $Username =   (($HostConfig | Where {$_ -like "*user*"})[0])   -Replace("^(?:\w+):\s","")
-            $Password =   ($HostConfig  | Where {$_ -like "*password*"})   -Replace("^(?:\w+):\s","")
+            $Username   = (($HostConfig | Where {$_ -like "*user*"})[0])   -Replace("^(?:\w+):\s","")
+            $Password   = ($HostConfig  | Where {$_ -like "*password*"})   -Replace("^(?:\w+):\s","")
             $DomainJoin = ($HostConfig  | Where {$_ -like "*DomainJoin*"}) -Replace("^(?:\w+):\s","")
-            $MachineOU =  ($HostConfig  | Where {$_ -like "*MachineOU*"})  -Replace("^(?:\w+):\s","")
-            
+            $DomainJoin = ($HostConfig  | Where {$_ -like "*DomainJoin*"}) -Replace("^(?:\w+):\s","")
+            $MachineOU  = ($HostConfig  | Where {$_ -like "*MachineOU*"})  -Replace("^(?:\w+):\s","")
+
+
             # Set user password.
             # ------------------------------------------------------------
             if ($Username -and $Password) {
@@ -144,26 +146,28 @@ if ($DnsPrefixes -contains $ServerPrefix) {
 
         # If Domain Join Creds have been provided, use that.
         # ------------------------------------------------------------
-        $JoinUser = $($DomainJoin -Split(":"))[0]
-        $JoinPass = $($DomainJoin -Split(":"))[1]
-        $CryptPassword = ConvertTo-SecureString $JoinPass -AsPlainText -Force
-        $Credentials = New-Object System.Management.Automation.PSCredential ($JoinUser, $CryptPassword)
+        $DomainCreds = $DomainJoin -Split(":") 
+        $CryptPassword = ConvertTo-SecureString $($DomainCreds[1]) -AsPlainText -Force
+        $Credentials = New-Object System.Management.Automation.PSCredential ($($DomainCreds[0]), $CryptPassword)
 
     } else {
 
         # If No Domain Join Creds, try using default.
         # ------------------------------------------------------------
         $CryptPassword = ConvertTo-SecureString $Password -AsPlainText -Force
-        $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $CryptPassword)
-    
+        $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $CryptPassword)    
     }
-    if ($null -ne $MachineOU) {
-        $DomainDistinguishedName = (($DomainName -split("\.")) | ForEach-Object { "DC=$($_)" }) -join(",")
-        $JoinOU = $MachineOU -replace("DC=NewDOmain",$DomainDistinguishedName)
 
-        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials -OUPath $JoinOU -Restart
+    if ($null -ne $MachineOU) {
+        $DomainDN = (($DomainName -split("\.")) | ForEach-Object { "DC=$($_)" }) -join(",")
+        $JoinMachineOU = @($MachineOU ,$DomainDN) -Join(",")
+
+        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials -OUPath $JoinMachineOU -Restart
+
     } else {
+
         Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials -Restart
+
     }
 
 } else {
