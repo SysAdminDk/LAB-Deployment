@@ -11,165 +11,167 @@
 #>
 
 
-<# 
-
-    Simple way of getting Server Name and IP from Cloud Init drive.
-
-#>
-
-# Find Cloud Init Media Drive.
+# Start logging.
 # ------------------------------------------------------------
-$MediaDrive = Get-WmiObject -Class Win32_volume -Filter "DriveType = '5'"
-if ($null -ne $MediaDrive.Name) {
+$LogFile = "$($ENV:SystemRoot)\Temp\Bootstrap.log"
+"[$(Get-Date)] Starting bootstrap..." | Out-File -FilePath $LogFile -Append
 
-<# 
 
-#>
+# Find Media Drive.
+# ------------------------------------------------------------
+$MediaDrives = Get-WmiObject -Class Win32_volume -Filter "DriveType = '5'"
+foreach ($MediaDrive in $MediaDrives) {
+
+    "[$(Get-Date)] Checking $($Mediadrive.name)" | Out-File -FilePath $LogFile -Append
+
 
     # Get content from NetConfig file
     # ------------------------------------------------------------
-    $NetworkConfig = Get-Content -Path $(Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "0000").FullName
+    $NetworkConfigFile = $(Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "0000" -ErrorAction SilentlyContinue)
+    if ($NetworkConfigFile) {
+        $NetworkConfig = Get-Content -Path $NetworkConfigFile.FullName
+
+        # Network Config
+        # ------------------------------------------------------------
+        if ($NetworkConfig) {
+
+            # Extract values from NetworkConfig
+            # ------------------------------------------------------------
+            "[$(Get-Date)] Extracting Network Configuration" | Out-File -FilePath $LogFile -Append
+
+            $DNSServers = ((($NetworkConfig | Where {$_ -like "*nameservers*"}) -replace("dns-nameservers","")).trim() -split "[ ,]+")
+            $IPGateway =  (($NetworkConfig  | Where {$_ -like "*gateway*"})     -replace("gateway","")).trim()
+            $IPAddress =  (($NetworkConfig  | Where {$_ -like "*address*"})     -replace("address","")).trim()
+            $IPNetmask =  (($NetworkConfig  | Where {$_ -like "*netmask*"})     -replace("netmask","")).trim()
 
 
-    # Extract values from NetworkConfig
-    # ------------------------------------------------------------
-    $DNSServers = ((($NetworkConfig | Where {$_ -like "*dns-nameservers*"}) -replace("dns-nameservers","")).trim() -split(" |,"))
-    $Gateway = (($NetworkConfig | Where {$_ -like "*gateway*"}) -replace("gateway","")).trim()
-    $Address = (($NetworkConfig | Where {$_ -like "*address*"}) -replace("address","")).trim()
-    $Netmask = (($NetworkConfig | Where {$_ -like "*netmask*"}) -replace("netmask","")).trim()
-    $Prefix = (($Netmask -split '\.' | ForEach-Object { [Convert]::ToString($_,2).PadLeft(8,'0') } ) -join("")) -replace '0','' | Measure-Object -Character | Select-Object -ExpandProperty Characters
+            # Apply NetConfig
+            # ------------------------------------------------------------
+            "[$(Get-Date)] Apply Network Configuration" | Out-File -FilePath $LogFile -Append
 
+            $IPPrefix = (($IPNetmask -split '\.' | ForEach-Object { [Convert]::ToString($_,2).PadLeft(8,'0') } ) -join("")) -replace '0','' | Measure-Object -Character | Select-Object -ExpandProperty Characters
+            Get-NetAdapter | New-NetIPAddress -IPAddress "$IPAddress" -PrefixLength $IPPrefix -DefaultGateway $IPGateway | Out-Null
 
-    # Apply NetConfig
-    # ------------------------------------------------------------
-    Get-NetAdapter | New-NetIPAddress -IPAddress "$Address" -PrefixLength $Prefix -DefaultGateway $Gateway | Out-Null
-    Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses $DNSServers | Out-Null
+            $DNSServers = $DNSServers | ForEach-Object { $_.Trim() }
+            Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses $DNSServers | Out-Null
+        }
+    }
 
-<# 
-
-#>
 
     # Get content from User Data 
     # ------------------------------------------------------------
-    $HostConfig = Get-Content -Path $(Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "USER_DATA").FullName
+    $HostConfigFile = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "USER_DATA" -ErrorAction SilentlyContinue
+    if ($HostConfigFile) {
+        $HostConfig = Get-Content -Path $HostConfigFile.FullName
 
+        # Host Config
+        # ------------------------------------------------------------
+        if ($HostConfig) {
 
-    # Extract values from User Data
-    # ------------------------------------------------------------
-    $HostName = ($HostConfig | Where {$_ -like "*hostname*"}) -Replace("^(?:\w+):\s","")
-    $DomainName = ((($HostConfig | Where {$_ -like "*fqdn*"}) -Replace("^(?:\w+):\s","") -split("\."))[1..99]) -join(".")
-    $Username = (($HostConfig | Where {$_ -like "*user*"})[0]) -Replace("^(?:\w+):\s","")
-    $Password = ($HostConfig | Where {$_ -like "*password*"}) -Replace("^(?:\w+):\s","")
+            # Extract values from User Data
+            # ------------------------------------------------------------
+            "[$(Get-Date)] Apply Network Configuration" | Out-File -FilePath $LogFile -Append
 
+            $HostName =   ($HostConfig  | Where {$_ -like "*hostname*"})   -Replace("^(?:\w+):\s","")
+            $DomainName = (($HostConfig | Where {$_ -like "*fqdn*"})       -Replace("^(?:\w+):\s","") -split("\.", 2))[1]
+            $Username =   (($HostConfig | Where {$_ -like "*user*"})[0])   -Replace("^(?:\w+):\s","")
+            $Password =   ($HostConfig  | Where {$_ -like "*password*"})   -Replace("^(?:\w+):\s","")
+            $DomainJoin = ($HostConfig  | Where {$_ -like "*DomainJoin*"}) -Replace("^(?:\w+):\s","")
+            $MachineOU =  ($HostConfig  | Where {$_ -like "*MachineOU*"})  -Replace("^(?:\w+):\s","")
+            
+            # Set user password.
+            # ------------------------------------------------------------
+            if ($Username -and $Password) {
+                "[$(Get-Date)] Set Local User Password." | Out-File -FilePath $LogFile -Append
 
-    # Set user password.
-    # ------------------------------------------------------------
-    $CryptPassword = ConvertTo-SecureString $Password -AsPlainText -Force
-    Set-LocalUser -Name $Username -Password $CryptPassword
-
-
-    # Verify Internet Access.
-    # ------------------------------------------------------------
-    for($i=0; $i -lt 100; $i++) {
-
-        $NetworkTest = Test-NetConnection -ComputerName "api.github.com" -Port 443
-        if ($NetworkTest.TcpTestSucceeded) {
-            break
-        } else {
-            Start-Sleep -Seconds 5
+                $CryptPassword = ConvertTo-SecureString $Password -AsPlainText -Force
+                if (Get-LocalUser -Name $Username -ErrorAction SilentlyContinue) {
+                    Set-LocalUser -Name $Username -Password $CryptPassword
+                }
+            }
         }
     }
 
-
-    if (-not $NetworkTest.TcpTestSucceeded) {
-        throw "Timeout waiting for $HostToCheck on port $Port"
-    }        
-
-
-    # Get Server Config file, if any exists
+    # Set startup script, if exists.
     # ------------------------------------------------------------
-    try {
+    $RunAtStartupFile = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "$HostName.ps1" -ErrorAction SilentlyContinue
+    if ($HostConfigFile) {
 
-        # Get the file list at root of repo
+        # Set startup script, if exists.
         # ------------------------------------------------------------
-        $Uri = "https://api.github.com/repos/SysAdminDk/LAB-Deployment/contents/Windows%20Servers?ref=main"
-        $Files = Invoke-RestMethod -Uri $Uri -Headers @{ "User-Agent" = "Powershell" }
+        if ($($RunAtStartupFile.FullName) -and $Username -and $Password) {
 
-        $DownloadFile = $Files | Where-Object { $_.name -eq "$Hostname.ps1" }
-        if ($null -eq $DownloadFile) {
+            "[$(Get-Date)] Add Autologon and Resume BootStrap" | Out-File -FilePath $LogFile -Append
 
-            $HostPrefix = $($Hostname -split("-"))[0]
-            $DownloadFile = $Files | Where-Object { $_.name -eq "$HostPrefix-0x.ps1" }
-        }
-        
-        # Download selected file
-        # ------------------------------------------------------------
-        Invoke-WebRequest -Uri $DownloadFile.download_url -OutFile "C:\Scripts\$Hostname.ps1"
-
-
-        # Get Domain Name from DNS Suffix
-        # --------------------------------------------------------------------------------------------------
-        $Netbios = $(($DomainName -split("\."))[0]).ToUpper()
-
-
-        # Enabled Autologin
-        # --------------------------------------------------------------------------------------------------
-        $AutoLoginData = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
-
-        if ($AutoLoginData.AutoLogonCount -le 2) {
+            # Setup Autologon
+            # --------------------------------------------------------------------------------------------------
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoLogonCount" -value 3
-        }
-        if ($AutoLoginData.AutoAdminLogon -eq 0) {
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoAdminLogon" -value 1
-        }
-        if ($AutoLoginData.DefaultUserName -ne $env:USERNAME) {
-            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultUserName" -value $env:USERNAME -Force
-        }
-        if ( (!($AutoLoginData.DefaultPassword)) -or ($AutoLoginData.DefaultPassword -ne $UserPassword) ) {
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultUserName" -value $Username -Force
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Value $Password -Force
-        }
-        if ($AutoLoginData.DefaultDomainName -ne $Netbios) {
-            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultDomainName" -value $Netbios -Force
-        }
 
 
-        # Registry Run
-        # --------------------------------------------------------------------------------------------------
-        if (!(Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -ErrorAction SilentlyContinue)) {
-            New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -Value "Powershell.exe -ExecutionPolicy Bypass -File `"C:\Scripts\$Hostname.ps1`"" | Out-Null
+            # Registry Run
+            # --------------------------------------------------------------------------------------------------
+            if (!(Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Resume BootStrap" -ErrorAction SilentlyContinue)) {
+                New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Resume BootStrap" -Value "Powershell.exe -ExecutionPolicy Bypass -File `"$($RunAtStartupFile.FullName)`"" | Out-Null
+            }
         }
-
     }
-    catch {
-    }
+}
 
 
-    # If DNS server is on same subnet, Domain Join..
+# Function - Extract network prefix
+# ------------------------------------------------------------
+function Get-NetworkPrefix {
+    param([string]$Ip)
+    return ($Ip -split '\.')[0..2] -join "."
+}
+
+
+# If DNS server is on same subnet, Domain Join..
+# ------------------------------------------------------------
+$ServerPrefix = Get-NetworkPrefix $Address
+$DnsPrefixes = $DNSServers | ForEach-Object { Get-NetworkPrefix $_ } | Sort-Object -Unique
+
+if ($DnsPrefixes -contains $ServerPrefix) {
+
+    "[$(Get-Date)] Domain Join" | Out-File -FilePath $LogFile -Append
+
+    # Domain Join
     # ------------------------------------------------------------
-    function Get-NetworkPrefix {
-        param([string]$Ip)
-        return ($Ip -split '\.')[0..2] -join "."
-    }
+    if ($DomainJoin) {
 
-
-    # Address Prefix
-    # ------------------------------------------------------------
-    $ServerPrefix = Get-NetworkPrefix $Address
-    $DnsPrefixes = $DNSServers | ForEach-Object { Get-NetworkPrefix $_ } | Sort-Object -Unique
-
-
-    if ($DnsPrefixes -contains $ServerPrefix) {
-
-        # Domain Join
+        # If Domain Join Creds have been provided, use that.
         # ------------------------------------------------------------
-        $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $CryptPassword)
-        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials -Restart
+        $JoinUser = $($DomainJoin -Split(":"))[0]
+        $JoinPass = $($DomainJoin -Split(":"))[1]
+        $CryptPassword = ConvertTo-SecureString $JoinPass -AsPlainText -Force
+        $Credentials = New-Object System.Management.Automation.PSCredential ($JoinUser, $CryptPassword)
 
     } else {
 
-        # First Domain Controller or Workgroup
+        # If No Domain Join Creds, try using default.
         # ------------------------------------------------------------
-        Rename-Computer -NewName $HostName -Restart
-
+        $CryptPassword = ConvertTo-SecureString $Password -AsPlainText -Force
+        $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $CryptPassword)
+    
     }
+    if ($null -ne $MachineOU) {
+        $DomainDistinguishedName = (($DomainName -split("\.")) | ForEach-Object { "DC=$($_)" }) -join(",")
+        $JoinOU = $MachineOU -replace("DC=NewDOmain",$DomainDistinguishedName)
+
+        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials -OUPath $JoinOU -Restart
+    } else {
+        Add-Computer -NewName $HostName -DomainName $DomainName -Credential $Credentials -Restart
+    }
+
+} else {
+
+    "[$(Get-Date)] Rename Server" | Out-File -FilePath $LogFile -Append
+
+    # First Domain Controller or Workgroup
+    # ------------------------------------------------------------
+    Rename-Computer -NewName $HostName -Restart
+
 }

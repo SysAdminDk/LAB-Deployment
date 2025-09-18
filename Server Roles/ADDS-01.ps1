@@ -12,33 +12,53 @@
 #>
 
 
-# Cleanup when Domain is up and running.
-# --------------------------------------------------------------------------------------------------
-Try {
-    $DomainQuery = Get-ADDomain -Identity $DomainName -ErrorAction SilentlyContinue
+<#
+
+    Gather required data from Cloud Init
+
+#>
+# Find Media Drive.
+# ------------------------------------------------------------
+$MediaDrives = Get-WmiObject -Class Win32_volume -Filter "DriveType = '5'"
+foreach ($MediaDrive in $MediaDrives) {
+
+    # Get content from User Data 
+    # ------------------------------------------------------------
+    $HostConfigFile = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "USER_DATA" -ErrorAction SilentlyContinue
+    if ($HostConfigFile) {
+        $HostConfig = Get-Content -Path $HostConfigFile.FullName
+    }
+
+
+    # Locate TS AD Tiering tools
+    # ------------------------------------------------------------
+    $ADTieringFile = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "ADTiering.zip" -ErrorAction SilentlyContinue
+
 }
-Catch {
-    Write-Host "Domain not created yet, continue script"
+
+
+# Host Config
+# ------------------------------------------------------------
+if ($HostConfig) {
+
+    # Extract values from User Data
+    # ------------------------------------------------------------
+    $DomainName = (($HostConfig | Where {$_ -like "*fqdn*"})     -Replace("^(?:\w+):\s","") -split("\.", 2))[1]
+    $Username =   (($HostConfig | Where {$_ -like "*user*"})[0]) -Replace("^(?:\w+):\s","")
+    $Password =   ($HostConfig  | Where {$_ -like "*password*"}) -Replace("^(?:\w+):\s","")
 }
 
-if ( ((gwmi win32_computersystem).partofdomain) -and ($null -ne $DomainQuery) ) {
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "AutoAdminLogon" -value 0
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "AutoLogonCount" -value 0
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "DefaultUserName " -value ""
-    Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Force -ErrorAction SilentlyContinue
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon' -name "DefaultDomainName" -value ""
-    Remove-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -Force -ErrorAction SilentlyContinue
-}
 
+<#
 
-# Needed information about the servers network
-# --------------------------------------------------------------------------------------------------
-$NetAdapter = Get-NetAdapter | Where {$_.Status -eq "UP"}
-$CurrentIP = $NetAdapter | Get-NetIPAddress -AddressFamily IPv4
+    Workgroup taks.
+    1. Enable Autologin if not already.
+    2. Add RunOnce if not already
+    3. Install ADDS.
+    4. Create Domain.
 
+#>
 
-# Run when in WorkGroup
-# --------------------------------------------------------------------------------------------------
 if (!((gwmi win32_computersystem).partofdomain)) {
 
     # Get Domain Name from DNS Suffix
@@ -56,50 +76,19 @@ if (!((gwmi win32_computersystem).partofdomain)) {
     if ($AutoLoginData.AutoAdminLogon -eq 0) {
         Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoAdminLogon" -value 1
     }
-    if ($AutoLoginData.DefaultUserName -ne $env:USERNAME) {
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultUserName" -value $env:USERNAME -Force
+    if (!($AutoLoginData.DefaultUserName)) {
+        Write-Error "Missing Auto Logon Username"
     }
-    if ( (!($AutoLoginData.DefaultPassword)) -or ($AutoLoginData.DefaultPassword -ne $UserPassword) ) {
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Value $Password -Force
-    }
-    if ($AutoLoginData.DefaultDomainName -ne $Netbios) {
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultDomainName" -value $Netbios -Force
+    if (!($AutoLoginData.DefaultPassword)) {
+        Write-Error "Missing Auto Logon Password"
     }
 
 
     # Registry Run
     # --------------------------------------------------------------------------------------------------
-    if (!(Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -ErrorAction SilentlyContinue)) {
-        New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Install Domain" -Value "Powershell.exe -ExecutionPolicy Bypass -File `"C:\Scripts\ADDS-01.ps1`"" | Out-Null
+    if (!(Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" -Name "Install Domain" -ErrorAction SilentlyContinue)) {
+        New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" -Name "Install Domain" -Value "Powershell.exe -ExecutionPolicy Bypass -NoProfile -File `"$($MyInvocation.MyCommand.Definition)`"" -Force | Out-Null
     }
-
-
-    # Configure IP Address
-    # --------------------------------------------------------------------------------------------------
-    $CurrentIPAddress = ($CurrentIP.IPAddress -split("\."))[-1]
-    $CurrentSubnet = ($CurrentIP.IPAddress -split("\."))[0..2] -join(".")
-    $CurrentGateway = (Get-NetIPConfiguration -InterfaceIndex $NetAdapter.ifIndex).IPv4DefaultGateway.NextHop
-
-    If ($CurrentIPAddress -ne "11") {
-        Get-NetAdapter | New-NetIPAddress -IPAddress "$CurrentSubnet.11" -PrefixLength $CurrentIP.PrefixLength -DefaultGateway $CurrentGateway | Out-Null
-        Get-NetAdapter | Set-DnsClientServerAddress -ServerAddresses ("8.8.8.8", "8.8.4.4") | Out-Null
-    }
-
-
-    # Rename computer (If wrong name)
-    # --------------------------------------------------------------------------------------------------
-    if ($env:computername -ne "ADDS-01") {
-        Write-Output "Renaming server"
-    
-	    Rename-Computer -NewName "ADDS-01" -Restart
-    
-        Start-Sleep -Seconds 300
-    }
-
-
-    # Wait for Restart & Login with Administrator
-    # --------------------------------------------------------------------------------------------------
-
 
 
     # Install ADDS & DNS
@@ -131,9 +120,29 @@ if (!((gwmi win32_computersystem).partofdomain)) {
 }
 
 
+<#
+
+    PDC Tasks.
+    1. Create DNS Zone
+    2. Create Reverse Zone
+    3. Create Truesec Active Directory Tiering
+    4. GPOs
+    5. Add LAPS to DCs
+    6. Copy PolicyDefinitions to Central Store
+    7. Copy Desired State Configurations to Central Store
+    8. Install and Configure Windows Backup, System State
+
+#>
 # Run after Domain have been created.
 # --------------------------------------------------------------------------------------------------
 if ((gwmi win32_computersystem).DomainRole -eq 5) {
+
+
+    # Get current network configuration
+    # --------------------------------------------------------------------------------------------------
+    $NetAdapter = Get-NetAdapter | Where {$_.Status -eq "UP"} | Select-Object -First 1
+    $CurrentIP = $NetAdapter | Get-NetIPAddress -AddressFamily IPv4
+
 
     # Add Reverse lookup DNS Zone
     # --------------------------------------------------------------------------------------------------
@@ -152,59 +161,40 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
         New-ADReplicationSubnet -Name $IPSubnet -Site $SiteName
     }
 
-<#
-    # Create Simple Tiering OU structure
+
+    # Setup Active Directory Tiering.
     # --------------------------------------------------------------------------------------------------
-    New-ADOrganizationalUnit -Name "Admin" -Path $($DomainQuery.DistinguishedName)
-    $AdminPath = Get-ADOrganizationalUnit -Identity "OU=Admin,$($DomainQuery.DistinguishedName)"
+    if ($ADTieringFile) { 
+        if (Test-Path -Path "$($ENV:USERPROFILE)\Downloads") {
+            Expand-Archive -Path $ADTieringFile -DestinationPath "$($ENV:USERPROFILE)\Downloads"
+        }
 
-#    New-ADOrganizationalUnit -Name "ConnectionAccounts" -Path $($AdminPath.DistinguishedName)
+        Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:0
+        & "$($ENV:USERPROFILE)\Downloads\ADTiering\Deploy-TSxADTiering.ps1" -CompanyName MyCompany -TierOUName Admin -NoOfTiers 1 -SkipTierEndpointsPAW -SkipTierEndpoints -SkipComputerRedirect -WindowsLAPSOnly
 
-    New-ADOrganizationalUnit -Name "Tier0" -Path $($AdminPath.DistinguishedName)
-    $Tier0Path = Get-ADOrganizationalUnit -Identity "OU=Tier0,$($AdminPath.DistinguishedName)"
+        Import-Module "$($ENV:USERPROFILE)\Downloads\ADTiering\TSxTieringModule\TSxTieringModule.psm1" -Force -Verbose
 
-    New-ADOrganizationalUnit -Name "AdminAccounts" -Path $($Tier0Path.DistinguishedName)
-    New-ADOrganizationalUnit -Name "Groups" -Path $($Tier0Path.DistinguishedName)
-    New-ADOrganizationalUnit -Name "JumpStations" -Path $($Tier0Path.DistinguishedName)
-    New-ADOrganizationalUnit -Name "Servers" -Path $($Tier0Path.DistinguishedName)
-    $Tier0Servers = Get-ADOrganizationalUnit -Identity "OU=Servers,$($Tier0Path.DistinguishedName)"
+        $ADTieringPath = Split-Path -Path $ADTieringFile
+        if (Test-Path -Path "$ADTieringPath\Users.txt") {
+            $UserList = Get-Content -Path "$ADTieringPath\Users.txt"
 
-    New-ADOrganizationalUnit -Name "CertificateAuthorityServers" -Path $($Tier0Servers.DistinguishedName)
-    New-ADOrganizationalUnit -Name "SyncServers" -Path $($Tier0Servers.DistinguishedName)
-
-    New-ADOrganizationalUnit -Name "Tier1" -Path $($AdminPath.DistinguishedName)
-    $Tier1Path = Get-ADOrganizationalUnit -Identity "OU=Tier1,$($AdminPath.DistinguishedName)"
-
-    New-ADOrganizationalUnit -Name "AdminAccounts" -Path $($Tier1Path.DistinguishedName)
-    New-ADOrganizationalUnit -Name "Groups" -Path $($Tier1Path.DistinguishedName)
-    New-ADOrganizationalUnit -Name "JumpStations" -Path $($Tier1Path.DistinguishedName)
-    New-ADOrganizationalUnit -Name "Servers" -Path $($Tier1Path.DistinguishedName)
-    $Tier1Servers = Get-ADOrganizationalUnit -Identity "OU=Servers,$($Tier1Path.DistinguishedName)"
-    
-    New-ADOrganizationalUnit -Name "RemoteDesktopBackendServers" -Path $($Tier1Servers.DistinguishedName)
-    New-ADOrganizationalUnit -Name "FileServers" -Path $($Tier1Servers.DistinguishedName)
-    New-ADOrganizationalUnit -Name "AzureGatewayServers" -Path $($Tier1Servers.DistinguishedName)
-    New-ADOrganizationalUnit -Name "NetworkPolicyServers" -Path $($Tier1Servers.DistinguishedName)
-#>
-
-    # Create inital users
-    # --------------------------------------------------------------------------------------------------
-    $SecurePassword = ConvertTo-SecureString -string $Password -AsPlainText -Force
-    New-ADUser -AccountPassword $SecurePassword -ChangePasswordAtLogon $false -DisplayName "T0-Admin" -Enabled $true -Name "T0-ADMIN" -SamAccountName "T0-Admin" -UserPrincipalName "T0-Admin@$($ENV:USERDNSDOMAIN)" -PasswordNeverExpires $True -Path "OU=AdminAccounts,$($Tier0Path.DistinguishedName)"
-#    New-ADUser -AccountPassword $SecurePassword -ChangePasswordAtLogon $false -DisplayName "Con-User" -Enabled $true -Name "Con-User" -SamAccountName "Con-User" -UserPrincipalName "Con-User@$($ENV:USERDNSDOMAIN)" -PasswordNeverExpires $True -Path "OU=ConnectionAccounts,$($AdminPath.DistinguishedName)"
-
-    # Create inital Group and add members
-    # --------------------------------------------------------------------------------------------------
-#    New-ADGroup -Name "Domain ConnectionAccounts" -Path "OU=ConnectionAccounts,$($AdminPath.DistinguishedName)" -GroupScope Global
-    Add-ADGroupMember -Identity "Domain Admins" -Members @($(Get-ADUser -Identity "T0-Admin"))
-#    Add-ADGroupMember -Identity "Domain ConnectionAccounts" -Members @($(Get-ADUser -Identity "Con-User"))
+            $CreatedUsers = @()
+            $UserList | ForEach-Object {
+                $Username = $_ -split(" ")
+                $CreatedUsers += New-TSxAdminAccount -FirstName $Username[0] -LastName $Username[1] -AccountType T0 -Prefix "Adm" -Suffix "FTE" -AddToSilo $false -Verbose
+                $CreatedUsers += New-TSxAdminAccount -FirstName $Username[0] -LastName $Username[1] -AccountType T1 -Prefix "Adm" -Suffix "FTE" -AddToSilo $false -Verbose
+                $CreatedUsers += New-TSxAdminAccount -FirstName $Username[0] -LastName $Username[1] -AccountType CON -Prefix "Adm" -Suffix "FTE" -AddToSilo $false -Verbose
+            }
+            $CreatedUsers | Out-File "$($ENV:USERPROFILE)\Documents\CreatedUsers.txt" -Append
+        }
+    }
 
 
     # Create GPO - Disable Server Manager
     # --------------------------------------------------------------------------------------------------
     $GPO = New-GPO -Name "Admin - Disable Server Manager"
     Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DistinguishedName -Server $(Get-ADDomain).PDCEmulator -LinkEnabled Yes | Out-Null
+    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DistinguishedName -LinkEnabled Yes | Out-Null
     (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
 
     Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\Software\Policies\Microsoft\Windows\Server\ServerManager" -ValueName DoNotOpenAtLogon -Value 1 -Type DWord | Out-Null
@@ -214,15 +204,20 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
 
     # Create GPO - Enable Remote Desktop
     # --------------------------------------------------------------------------------------------------
-    $GPO = New-GPO -Name "Admin - Enable Remote Desktop"
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
-    Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DistinguishedName -LinkEnabled Yes | Out-Null
-    (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
+    if (!((Get-GPInheritance -Target (Get-ADDomain).DomainControllersContainer).gpolinks | Where {$_.displayname -like "*Enable Remote Desktop*"})) {
+        
+        # Tiering not executed, make sure we can RDP to the servers.
+        # --------------------------------------------------------------------------------------------------
+        $GPO = New-GPO -Name "Admin - Enable Remote Desktop"
+        Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
+        Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DistinguishedName -LinkEnabled Yes | Out-Null
+        (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
 
-    Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -ValueName "fDenyTSConnections" -Value 0 -Type DWord | Out-Null
-    Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules" -ValueName "RemoteDesktop-UserMode-In-UDP" -Value "v2.31|Action=Allow|Active=TRUE|Dir=In|Protocol=17|LPort=3389|App=%SystemRoot%\system32\svchost.exe|Svc=termservice|Name=@FirewallAPI.dll,-28776|Desc=@FirewallAPI.dll,-28777|EmbedCtxt=@FirewallAPI.dll,-28752|" -Type String | Out-Null
-    Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules" -ValueName "RemoteDesktop-UserMode-In-TCP" -Value "v2.31|Action=Allow|Active=TRUE|Dir=In|Protocol=6|LPort=3389|App=%SystemRoot%\system32\svchost.exe|Svc=termservice|Name=@FirewallAPI.dll,-28775|Desc=@FirewallAPI.dll,-28756|EmbedCtxt=@FirewallAPI.dll,-28752|" -Type String | Out-Null
-    Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules" -ValueName "RemoteDesktop-Shadow-In-TCP" -Value "v2.31|Action=Allow|Active=TRUE|Dir=In|Protocol=6|App=%SystemRoot%\system32\RdpSa.exe|Name=@FirewallAPI.dll,-28778|Desc=@FirewallAPI.dll,-28779|EmbedCtxt=@FirewallAPI.dll,-28752|Edge=TRUE|Defer=App|" -Type String | Out-Null
+        Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -ValueName "fDenyTSConnections" -Value 0 -Type DWord | Out-Null
+        Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules" -ValueName "RemoteDesktop-UserMode-In-UDP" -Value "v2.31|Action=Allow|Active=TRUE|Dir=In|Protocol=17|LPort=3389|App=%SystemRoot%\system32\svchost.exe|Svc=termservice|Name=@FirewallAPI.dll,-28776|Desc=@FirewallAPI.dll,-28777|EmbedCtxt=@FirewallAPI.dll,-28752|" -Type String | Out-Null
+        Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules" -ValueName "RemoteDesktop-UserMode-In-TCP" -Value "v2.31|Action=Allow|Active=TRUE|Dir=In|Protocol=6|LPort=3389|App=%SystemRoot%\system32\svchost.exe|Svc=termservice|Name=@FirewallAPI.dll,-28775|Desc=@FirewallAPI.dll,-28756|EmbedCtxt=@FirewallAPI.dll,-28752|" -Type String | Out-Null
+        Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\WindowsFirewall\FirewallRules" -ValueName "RemoteDesktop-Shadow-In-TCP" -Value "v2.31|Action=Allow|Active=TRUE|Dir=In|Protocol=6|App=%SystemRoot%\system32\RdpSa.exe|Name=@FirewallAPI.dll,-28778|Desc=@FirewallAPI.dll,-28779|EmbedCtxt=@FirewallAPI.dll,-28752|Edge=TRUE|Defer=App|" -Type String | Out-Null
+    }
 
 
     # Create GPO - Cleanup Server Desktop
@@ -273,15 +268,27 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     }
 
 
-<#
-    # Make DSC folders in Netlogon
+    # Copy all DSC files to \Netlogon
     # --------------------------------------------------------------------------------------------------
-    $DSCFiles = (Get-ChildItem -Path "$($ENV:SystemDrive)\Scripts\" -Recurse -Filter "*.mof")
-    if ( (!(Test-Path -Path "C:\Windows\SYSVOL\domain\scripts\DSC-Files")) -and ($null -ne $DSCFiles) ) {
-        New-Item -Path "C:\Windows\SYSVOL\domain\scripts\DSC-Files" -ItemType Directory | Out-Null
-        $DSCFiles | ForEach-Object { Copy-Item $_.FullName -Destination "$VHDXVolume3\Scripts\MOF\" }
+    $MediaDrives = Get-WmiObject -Class Win32_volume -Filter "DriveType = '5'"
+    foreach ($MediaDrive in $MediaDrives) {
+        if (Test-Path -Path "$MediaDrive\Windows DSC") {
+
+            # Make DSC folders in Netlogon
+            # --------------------------------------------------------------------------------------------------
+            if (!(Test-Path -Path "$($env:SystemRoot)\SYSVOL\domain\scripts\Windows DSC")) {
+                New-Item -Path "$($env:SystemRoot)\SYSVOL\domain\scripts\Windows DSC" -ItemType Directory | Out-Null
+            }
+
+
+            # Find all mof files.
+            # --------------------------------------------------------------------------------------------------
+            $DSCFiles = (Get-ChildItem -Path "$MediaDrive\Windows DSC" -Recurse -Filter "*.mof")
+            $DSCFiles | ForEach-Object {
+                Copy-Item $_.FullName -Destination "$($env:SystemRoot)\SYSVOL\domain\scripts\Windows DSC"
+            }
+        }
     }
-#>
 
 
     <#
