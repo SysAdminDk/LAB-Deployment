@@ -8,12 +8,15 @@
     )
 
     # Get all cluster VMs
+    # ------------------------------------------------------------
     $allVMs = (Invoke-RestMethod -Uri "$ProxmoxAPI/cluster/resources?type=vm" -Headers $Headers).data | Select-Object vmid, name
 
     # Extract used IDs
+    # ------------------------------------------------------------
     $usedIDs = $allVMs.vmid | Sort-Object -Unique
 
     # Find first free ID in range
+    # ------------------------------------------------------------
     for ($id = $StartID; $id -le $EndID; $id++) {
         if ($id -notin $usedIDs) {
             return $id

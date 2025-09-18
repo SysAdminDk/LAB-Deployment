@@ -13,9 +13,9 @@
     $DefaultHeaders.Add("Accept", "application/json")
 
 
-# Ignore Self Signed Cert.
-# ------------------------------------------------------------
-add-type @"
+    # Ignore Self Signed Cert.
+    # ------------------------------------------------------------
+    add-type @"
     using System.Net;
     using System.Security.Cryptography.X509Certificates;
     public class TrustAllCertsPolicy : ICertificatePolicy {
@@ -32,7 +32,7 @@ add-type @"
 
     # Proxmox API address.
     # ------------------------------------------------------------
-    $DefaultProxmoxAPI = "https://$HostAddr`:8006/api2/json"
+    $DefaultProxmoxAPI = "https://$($HostAddr):8006/api2/json"
 
     return @( [PSCustomObject]@{ PVEAPI  = $DefaultProxmoxAPI; Headers = $DefaultHeaders } )
 

@@ -10,10 +10,10 @@
         [switch]$Wait
     )
 
-    $body = "vmid=$VMID"
-    $body += "&target=$TargetNode"
+    $Body = "vmid=$VMID"
+    $Body += "&target=$TargetNode"
     if ($Targetstorage) {
-        $body += "&targetstorage=$Targetstorage"
+        $Body += "&targetstorage=$Targetstorage"
     }
 
     try {

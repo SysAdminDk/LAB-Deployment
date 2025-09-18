@@ -8,50 +8,51 @@
     )
 
 
+    # I only use this function to upload Configuration ISOs, why the size limit.
+    # ------------------------------------------------------------
     if ($(Get-Item $IsoPath).Length -gt (100MB)) {
         throw "ISO file is too large, max allowed size is 100MB."
     }
 
-    $fileName = [System.IO.Path]::GetFileName($IsoPath)
-    $url = "$ProxmoxAPI/nodes/$Node/storage/$Storage/upload"
 
-    $boundary = [System.Guid]::NewGuid().ToString()
+    $FileName = [System.IO.Path]::GetFileName($IsoPath)
+    $Boundary = [System.Guid]::NewGuid().ToString()
 
-    $bodyLines = @()
-    $bodyLines += "--$boundary"
-    $bodyLines += 'Content-Disposition: form-data; name="content"'
-    $bodyLines += ""
-    $bodyLines += "iso"
-    $bodyLines += "--$boundary"
-    $bodyLines += "Content-Disposition: form-data; name=""filename""; filename=""$fileName"""
-    $bodyLines += "Content-Type: application/octet-stream"
-    $bodyLines += ""
+    $Body = @()
+    $Body += "--$Boundary"
+    $Body += 'Content-Disposition: form-data; name="content"'
+    $Body += ""
+    $Body += "iso"
+    $Body += "--$Boundary"
+    $Body += "Content-Disposition: form-data; name=""filename""; filename=""$fileName"""
+    $Body += "Content-Type: application/octet-stream"
+    $Body += ""
 
-    $preBytes = [Text.Encoding]::ASCII.GetBytes(($bodyLines -join "`r`n") + "`r`n")
-    $fileBytes = [System.IO.File]::ReadAllBytes($IsoPath)
-    $postBytes = [System.Text.Encoding]::ASCII.GetBytes("`r`n--$boundary--`r`n")
+    $BodyBytes = [Text.Encoding]::ASCII.GetBytes(($Body -join "`r`n") + "`r`n")
+    $FileBytes = [System.IO.File]::ReadAllBytes($IsoPath)
+    $PostBytes = [System.Text.Encoding]::ASCII.GetBytes("`r`n--$Boundary--`r`n")
 
-    $allBytes = New-Object byte[] ($preBytes.Length + $fileBytes.Length + $postBytes.Length)
-    [Array]::Copy($preBytes, 0, $allBytes, 0, $preBytes.Length)
-    [Array]::Copy($fileBytes, 0, $allBytes, $preBytes.Length, $fileBytes.Length)
-    [Array]::Copy($postBytes, 0, $allBytes, $preBytes.Length + $fileBytes.Length, $postBytes.Length)
+    $AllBytes = New-Object byte[] ($BodyBytes.Length + $FileBytes.Length + $PostBytes.Length)
+    [Array]::Copy($BodyBytes, 0, $AllBytes, 0, $BodyBytes.Length)
+    [Array]::Copy($FileBytes, 0, $AllBytes, $BodyBytes.Length, $FileBytes.Length)
+    [Array]::Copy($PostBytes, 0, $AllBytes, $BodyBytes.Length + $FileBytes.Length, $PostBytes.Length)
 
-    $request = [System.Net.HttpWebRequest]::Create($url)
-    $request.Method = "POST"
-    $request.Headers.Add("Authorization", $Headers["Authorization"])
-    $request.Accept = "application/json"
-    $request.ContentType = "multipart/form-data; boundary=$boundary"
-    $request.ContentLength = $allBytes.Length
+    $Request = [System.Net.HttpWebRequest]::Create("$ProxmoxAPI/nodes/$Node/storage/$Storage/upload")
+    $Request.Method = "POST"
+    $Request.Headers.Add("Authorization", $Headers["Authorization"])
+    $Request.Accept = "application/json"
+    $Request.ContentType = "multipart/form-data; boundary=$Boundary"
+    $Request.ContentLength = $AllBytes.Length
 
-    $reqStream = $request.GetRequestStream()
-    $reqStream.Write($allBytes, 0, $allBytes.Length)
-    $reqStream.Close()
+    $ReqStream = $Request.GetRequestStream()
+    $ReqStream.Write($AllBytes, 0, $AllBytes.Length)
+    $ReqStream.Close()
 
-    $response = $request.GetResponse()
-    $sr = New-Object System.IO.StreamReader($response.GetResponseStream())
-    $result = $sr.ReadToEnd()
-    $sr.Close()
-    $response.Close()
+    $Response = $Request.GetResponse()
+    $SR = New-Object System.IO.StreamReader($Response.GetResponseStream())
+    $Result = $SR.ReadToEnd()
+    $SR.Close()
+    $Response.Close()
 
-    return $result
+    return $Result
 }

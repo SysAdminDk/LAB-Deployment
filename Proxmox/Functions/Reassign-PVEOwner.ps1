@@ -34,21 +34,16 @@
     
 
     # Get Target data.
+    # ------------------------------------------------------------
     $TargetVMData = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$TargetVM/config" -Method Get -Headers $Headers).data
 
 
     # Find Target Disk Number to use
+    # ------------------------------------------------------------
     if ( ($TargetDisk -eq "Next") -or ($null -eq $TargetDisk) ) {
 
-        try {
-            $LastVMDisk = [String](($TargetVMData.PSObject.Properties | Where-Object { $_.Name -match $DiskType -and $_.value -like "*$TargetVM*"}).name | Sort-Object)[-1]
-            $NextVMDisk = $LastVMDisk.Substring(0, $LastVMDisk.Length -1) + ([MATH]::round([int]($LastVMDisk.Substring($LastVMDisk.Length -1, 1)) + 1))
-        }
-        catch {
-            $NextVMDisk = "scsi0"
-        }
-        
-        
+        $NextVMDisk = Get-PVENextDiskID -ProxmoxAPI $ProxmoxAPI -Headers $Headers -Node $SourceNode -VMID $TargetVM
+                
         # Add to VM
         $Body = "vmid=$SourceVM"
         $Body += "&target-vmid=$TargetVM"

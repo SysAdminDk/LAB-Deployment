@@ -9,14 +9,17 @@
 
     $TimeoutSeconds = 300
     $StartTime = Get-Date
-    $EndTime = $startTime.AddSeconds($TimeoutSeconds)
+    $EndTime = $StartTime.AddSeconds($TimeoutSeconds)
 
     do {
         $TaskStatus = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$Node/tasks/$Taskid/status" -Headers $headers
         
         if ($TaskStatus.data.status -ne "running") {
-            Write-Progress -Activity "Waiting for PVE Task ($($TaskStatus.data.type))" -Status "Completed" -PercentComplete 100
+            Write-Progress -Activity "Waiting for PVE Task ($($TaskStatus.data.type))" -Status "Completed" -PercentComplete 100 -Completed
             return
+        } elseif ((Get-Date) -ge $EndTime) {
+            Write-Progress -Activity "Waiting for PVE Task ($($TaskStatus.data.type))" -Status "Completed" -PercentComplete 100 -Completed
+            throw "Wait task timeout reached."
         }
 
         $Elapsed = (Get-Date) - $StartTime
