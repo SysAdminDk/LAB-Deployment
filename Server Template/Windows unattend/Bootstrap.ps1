@@ -92,12 +92,16 @@ foreach ($MediaDrive in $MediaDrives) {
                 }
             }
         }
-    }
 
-    # Set startup script, if exists.
-    # ------------------------------------------------------------
-    $RunAtStartupFile = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "$HostName.ps1" -ErrorAction SilentlyContinue
-    if ($HostConfigFile) {
+
+        # Set startup script, if exists.
+        # ------------------------------------------------------------
+        $RunAtStartupFile = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "$HostName.ps1" -ErrorAction SilentlyContinue
+        if (!($RunAtStartupFile)) {
+            $FileSearch = "$(($HostName -split("-"))[0])-0x"
+            $RunAtStartupFile = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "$FileSearch.ps1" -ErrorAction SilentlyContinue
+        }
+
 
         # Set startup script, if exists.
         # ------------------------------------------------------------
@@ -107,7 +111,7 @@ foreach ($MediaDrive in $MediaDrives) {
 
             # Setup Autologon
             # --------------------------------------------------------------------------------------------------
-            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoLogonCount" -value 3
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoLogonCount" -value 2
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoAdminLogon" -value 1
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultUserName" -value $Username -Force
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Value $Password -Force
@@ -131,7 +135,7 @@ function Get-NetworkPrefix {
 }
 
 
-# If DNS server is on same subnet, Domain Join..
+# If Domain Join..
 # ------------------------------------------------------------
 $ServerPrefix = Get-NetworkPrefix $Address
 $DnsPrefixes = $DNSServers | ForEach-Object { Get-NetworkPrefix $_ } | Sort-Object -Unique
