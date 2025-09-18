@@ -192,7 +192,7 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
 
     # Create GPO - Disable Server Manager
     # --------------------------------------------------------------------------------------------------
-    $GPO = New-GPO -Name "Admin - Disable Server Manager"
+    $GPO = New-GPO -Name "Default Disable Server Manager Startup"
     Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
     Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DistinguishedName -LinkEnabled Yes | Out-Null
     (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
@@ -241,14 +241,19 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     Set-GPRegistryValue -Name $GPO.DisplayName -Key "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" -ValueName AllowCortana -Value 0 -Type DWord | Out-Null
 
 
-    # Update Schema with Windows Laps.
+    # Update Schema with Windows Laps, if needed.
     # --------------------------------------------------------------------------------------------------
-    Update-LapsADSchema -Verbose -confirm:0
+    try {
+        Get-AdObject -Identity "CN=ms-LAPS-Password,CN=Schema,$($(Get-ADDomain).SubordinateReferences | Where-Object {$_ -like '*Config*'})" 
+    }
+    catch {
+        Update-LapsADSchema -Verbose -confirm:0
+    }
 
 
     # Create Windows Laps Policy
     # --------------------------------------------------------------------------------------------------
-    $GPO = New-GPO -Name "[MDFT] - Windows LAPS Domain Controller"
+    $GPO = New-GPO -Name "Admin - WindowsLAPS Settings - Domain Controller"
     Get-GPO -Name $GPO.DisplayName | New-GPLink -Target (Get-ADDomain).DomainControllersContainer -LinkEnabled Yes | Out-Null
     (Get-GPO -Name $GPO.DisplayName).GpoStatus = "UserSettingsDisabled"
 
