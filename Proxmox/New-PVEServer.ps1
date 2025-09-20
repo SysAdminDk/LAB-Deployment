@@ -2,6 +2,8 @@
     [cmdletbinding()]
     [Parameter(ValueFromPipeline)]
     [string]$NewVMFQDN,
+    [string]$MachineOU,
+    [string]$DomainJoin,
     [string]$NewVmIp,
     [string]$LocalUsername,
     [string]$LocalPassword,
@@ -65,7 +67,7 @@ Write-Verbose "Script begin: $(Get-Date)"
 ## Include Proxmox Connect script.
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 
-Get-ChildItem -Path ".\Functions" | ForEach-Object { Import-Module -Name $_.FullName -force }
+Get-ChildItem -Path "D:\PVE Scripts\Functions" | ForEach-Object { Import-Module -Name $_.FullName -force -Verbose:$false }
 
 
 if (!($DefaultConnection)) {
@@ -147,7 +149,7 @@ If ($MasterServer.Node -ne $SelectedVMTemplate.Node) {
 
 #>
 
-$AllVMIDs = (Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/cluster/resources?type=vm" -Headers $($PVEConnect.Headers)).data | Select-Object vmid, name
+$AllVMIDs = (Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/cluster/resources?type=vm" -Headers $PVEConnect.Headers -Verbose:$false).data | Select-Object vmid, name
 if ($AllVMIDs.vmid -contains $VMID) {
     throw "VMID already in use."
 
@@ -156,8 +158,7 @@ if ($AllVMIDs.vmid -contains $VMID) {
 # Configure and create VM
 # ------------------------------------------------------------
 Write-Verbose "Proxmox: Create new VM: $VMName"
-$VMCreate=$null
-$VMStatus=$null
+
 
 # Clone Template
 # ------------------------------------------------------------
@@ -168,27 +169,100 @@ $VMCreate = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.n
 Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -node $($PVELocation.name) -taskid $VMCreate.data
 
 
-
 # Add Cloud Init drive, with bare minimum data.
 # ------------------------------------------------------------
-$Body = "node=$($PVELocation.name)"
-$Body += "&ide2=$($PVELocation.Storage):cloudinit"
-$null = Invoke-RestMethod -Method POST -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $Body -Headers $PVEConnect.Headers
+#$Body = "node=$($PVELocation.name)"
+#$Body += "&ide2=$($PVELocation.Storage):cloudinit"
+#$null = Invoke-RestMethod -Method POST -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $Body -Headers $PVEConnect.Headers
 
 
 # Set bare minimum data in Cloud Init.
 # ------------------------------------------------------------
+#$Body = "node=$($PVELocation.name)"
+#$Body += "&citype=configdrive2"
+#$Body += "&ciuser=$LocalUsername"
+#$Body += "&cipassword=$LocalPassword"
+#$Body += "&searchdomain=$VmDomain"
+#$Body += "&nameserver=$DNSServers"
+#$Body += "&ipconfig0=$([uri]::EscapeDataString("ip=$NewVmIp/24,gw=$IPGateway"))"
+#
+#$null = Invoke-RestMethod -Method POST -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $Body -Headers $PVEConnect.Headers
+#
+#$null = Invoke-RestMethod -Method PUT -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/cloudinit" -Headers $PVEConnect.Headers
+
+
+# Create AutoUnattend media, and add required scripts.
+# ------------------------------------------------------------
+If (!(Test-Path -Path "D:\$NewVMFQDN")) {
+    New-Item -Path "D:\$NewVMFQDN" -ItemType Directory | Out-Null
+
+    if (!(Test-Path -Path "D:\$NewVMFQDN\OPENSTACK\CONTENT")) {
+        New-Item -Path "D:\$NewVMFQDN\OPENSTACK\CONTENT" -ItemType Directory -Force | Out-Null
+    }
+
+    $NetworkData = @()
+    $NetworkData += "auto eth0`r`n"
+    $NetworkData += "iface eth0 inet static`r`n"
+    $NetworkData += "        address $NewVmIp`r`n"
+    $NetworkData += "        netmask 255.255.255.0`r`n"
+    $NetworkData += "        gateway $IPGateway`r`n"
+    $NetworkData += "        dns-nameservers $($DNSServers -join(" "))`r`n"
+
+    $NetworkData | Out-File -FilePath "D:\$NewVMFQDN\OPENSTACK\CONTENT\0000" -Encoding utf8 -Force
+
+    if (!(Test-Path -Path "D:\$NewVMFQDN\OPENSTACK\LATEST")) {
+        New-Item -Path "D:\$NewVMFQDN\OPENSTACK\LATEST" -ItemType Directory -Force | Out-Null
+    }
+
+    $HostConfig = @()
+    $HostConfig += "#cloud-config"
+    $HostConfig += "hostname: $VMName"
+    $HostConfig += "manage_etc_hosts: true"
+    $HostConfig += "fqdn: $NewVMFQDN"
+    $HostConfig += "user: $LocalUsername"
+    $HostConfig += "password: $LocalPassword"
+    $HostConfig += "chpasswd:"
+    $HostConfig += "  expire: False"
+    $HostConfig += "users:"
+    $HostConfig += "  - default"
+    $HostConfig += "package_upgrade: true"
+    if ($MachineOU) {
+        $HostConfig += "MachineOU: $MachineOU"
+    }
+    if ($DomainJoin) {
+        $HostConfig += "DomainJoin: $DomainJoin"
+    }
+    $HostConfig | Out-File -FilePath "D:\$NewVMFQDN\OPENSTACK\LATEST\USER_DATA" -Encoding utf8 -Force
+
+
+    if (!(Test-Path -Path "D:\$NewVMFQDN\Windows DSC")) {
+        New-Item -Path "D:\$NewVMFQDN\Windows DSC" -ItemType Directory | Out-Null
+    }
+    Copy-Item -Path "D:\Server Roles" -Destination "D:\$NewVMFQDN\Windows DSC" -Recurse | Out-Null
+
+    if ($VMName -eq "ADDS-01") {
+        Copy-Item -Path "D:\TS-Data\ADTiering.zip" -Destination "D:\$NewVMFQDN" -Force
+    }
+}
+
+New-ISOFileFromFolder -FilePath "D:\$NewVMFQDN" -Name "Unattend Media" -ResultFullFileName "D:\$NewVMFQDN.iso"
+
+Remove-Item -Path "D:\$NewVMFQDN" -Recurse -Force
+
+# Upload ISO.
+$ISOStorage = ((Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/storage" -Headers $PVEConnect.Headers -Verbose:$false).data | Where {$_.content -like "*iso*"}).storage
+$null = Upload-PVEISO -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers) -Node $($PVELocation.name) -Storage $ISOStorage -IsoPath "D:\$NewVMFQDN.iso"
+
+# Add Iso to NewVM
 $Body = "node=$($PVELocation.name)"
-$Body += "&citype=configdrive2"
-$Body += "&ciuser=$LocalUsername"
-$Body += "&cipassword=$LocalPassword"
-$Body += "&searchdomain=$VmDomain"
-$Body += "&nameserver=$DNSServers"
-$Body += "&ipconfig0=$([uri]::EscapeDataString("ip=$NewVmIp/24,gw=$IPGateway"))"
+$Body += "&ide2=$([uri]::EscapeDataString("local:iso/$NewVMFQDN.iso,media=cdrom"))"
+$null = Invoke-RestMethod -Method POST -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $Body -Headers $PVEConnect.Headers -Verbose:$false
 
-$null = Invoke-RestMethod -Method POST -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $Body -Headers $PVEConnect.Headers
 
-$null = Invoke-RestMethod -Method PUT -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/cloudinit" -Headers $PVEConnect.Headers
+# Modify Boot sequence.
+$Body = "boot=$([uri]::EscapeDataString("order=scsi0"))"
+$null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $Body -Method POST -Headers $PVEConnect.Headers -Verbose:$false
+
 
 
 <# 
@@ -201,13 +275,14 @@ $null = Invoke-RestMethod -Method PUT -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELo
 # Change Disk size, amount memory and cpu if needed
 # ------------------------------------------------------------
 Write-Verbose "Proxmox: Change VM configuration"
-$VMStatus = (Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Headers $PVEConnect.Headers).data
+$VMStatus = (Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Headers $PVEConnect.Headers -Verbose:$false).data
+
 
 if ($VMStatus.cores -ne $VMCores) {
     Write-Verbose "Proxmox: Update CPU Cores"
 
     $body = "cores=$VMCores"
-    $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $body -Method Post -Headers $PVEConnect.Headers
+    $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $body -Method Post -Headers $PVEConnect.Headers -Verbose:$false
 
 }
 
@@ -216,13 +291,13 @@ if ([math]::Round($($VMMemory * 1KB)) -ne $VMStatus.memory) {
     Write-Verbose "Proxmox: Update Memory size"
 
     $body = "memory=$($VMMemory*1KB)"
-    $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $body -Method Post -Headers $PVEConnect.Headers
+    $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $body -Method Post -Headers $PVEConnect.Headers -Verbose:$false
 
 }
 
 # Calculate if OSDisk size differs, and change if needed.
 # ------------------------------------------------------------
-$OSDiskSize = (($VMStatus.(($VMStatus.boot -split("="))[-1]) -split("="))[-1]+"b")
+$OSDiskSize = ($VMStatus.((($VMStatus.boot -split("="))[-1] -split(";"))[0]) -split("="))[-1]+"b"
 $SizeDiff = [math]::round($OSDisk - $OSDiskSize) / 1Gb
 
 
@@ -230,7 +305,7 @@ if ($SizeDiff -gt 0) {
     Write-Verbose "Proxmox: Update Disk size"
 
     $body = "disk=$($CurrentOSDisk.name)&size=$($OSDisk.ToLower().replace("gb","G"))"
-    $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/resize" -Body $body -Method Put -Headers $PVEConnect.Headers 
+    $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/resize" -Body $body -Method Put -Headers $PVEConnect.Headers -Verbose:$false
 
 }
 
@@ -242,34 +317,32 @@ if ($SizeDiff -gt 0) {
 
 #>
 
+
 if ($VmDomain -ne "Workgroup") {
 
-    $LastVMDisk = [String](($VMStatus.PSObject.Properties | Where-Object { $_.Name -match $(($VMStatus.boot -split("="))[-1]) }).name | Sort-Object | Select-Object -Last 1)
-    $VMDiskCount =  + ([MATH]::round([int]($LastVMDisk.Substring($LastVMDisk.Length -1, 1)) + 1))
-
-    $StorageController = $(($VMStatus.boot -split("="))[-1]).Substring(0,  (($VMStatus.boot -split("="))[-1]).Length -1)
-    
-
-    switch ($VMName) {
+        switch ($VMName) {
         {$_ -like "ADDS-*"} {
 
             # Add 100Gb Backup Drive to All Domain Controllers.
             # ------------------------------------------------------------
-            $DiskId = $StorageController + $VMDiskCount
-            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):100"))" -Method Post -Headers $PVEConnect.Headers
+            $DiskId = Get-PVENextDiskID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -Node $PVELocation.name -VMID $VMID
+
+            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):100"))" -Method Post -Headers $PVEConnect.Headers -Verbose:$false
             $VMDiskCount++
 
         }
-        {$_ -like "File-0*" -or $_ -like "*RDDB-*"} {
+        {$_ -like "File-0*" -or $_ -like "*RDDB-*" -or $_ -like "*ADDS-*"} {
             
             # Add 10Gb Log Drive and 100Gb Data Drive to File Cluster and SQL Cluster
             # ------------------------------------------------------------
-            $DiskId = $StorageController + $VMDiskCount
-            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):20"))" -Method Post -Headers $PVEConnect.Headers
+            $DiskId = Get-PVENextDiskID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -Node $PVELocation.name -VMID $VMID
+
+            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):20"))" -Method Post -Headers $PVEConnect.Headers -Verbose:$false
             $VMDiskCount++
 
-            $DiskId = $StorageController + $VMDiskCount
-            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):100"))" -Method Post -Headers $PVEConnect.Headers
+            $DiskId = Get-PVENextDiskID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -Node $PVELocation.name -VMID $VMID
+
+            $Null = Invoke-WebRequest -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body "$DiskId=$([uri]::EscapeDataString("$($PVELocation.Storage):100"))" -Method Post -Headers $PVEConnect.Headers -Verbose:$false
             $VMDiskCount++
 
         }

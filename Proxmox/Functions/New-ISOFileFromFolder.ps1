@@ -14,7 +14,6 @@ Function New-ISOFileFromFolder{
         [Parameter(Mandatory=$true)]
         [String]$ResultFullFileName
     )
-    write-host "Creating ISO $Name" -ForegroundColor Green  
 
     $fsi = New-Object -ComObject IMAPI2FS.MsftFileSystemImage
     $dftd = New-Object -ComObject IMAPI2.MsftDiscFormat2Data
@@ -26,14 +25,9 @@ Function New-ISOFileFromFolder{
 
     
     $fsi.Root.AddTreeWithNamedStreams($FilePath,$false)
-
-
     
     $resultimage = $fsi.CreateResultImage()
     $resultStream = $resultimage.ImageStream
 
-
     Write-IStreamToFile $resultStream $ResultFullFileName
-    
-    
 }

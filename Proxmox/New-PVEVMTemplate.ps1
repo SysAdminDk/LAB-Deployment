@@ -41,28 +41,28 @@ $TemplateID = Get-PVENextID -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVECon
 
 # Default Template Configuration
 # ------------------------------------------------------------
-$body = "node=$($MasterID.Node)"
-$body += "&vmid=$TemplateID"
-$body += "&name=$(($VMName -split("\."))[0])"
-$body += "&bios=ovmf"
-$body += "&cpu=host"
-$body += "&ostype=win11"
-$body += "&machine=pc-q35-9.0"
-$body += "&tpmstate0=$([uri]::EscapeDataString("$($PVELocation.storage):1,size=4M,version=v2.0"))"
-$body += "&efidisk0=$([uri]::EscapeDataString("$($PVELocation.storage):1,efitype=4m,format=raw,pre-enrolled-keys=1"))"
-$body += "&net0=$([uri]::EscapeDataString("virtio,bridge=$($PVELocation.Interface),firewall=1"))"
-$body += "&boot=$([uri]::EscapeDataString("order=net0"))"
+$Body = "node=$($MasterID.Node)"
+$Body += "&vmid=$TemplateID"
+$Body += "&name=$(($VMName -split("\."))[0])"
+$Body += "&bios=ovmf"
+$Body += "&cpu=host"
+$Body += "&ostype=win11"
+$Body += "&machine=pc-q35-9.0"
+$Body += "&tpmstate0=$([uri]::EscapeDataString("$($PVELocation.storage):1,size=4M,version=v2.0"))"
+$Body += "&efidisk0=$([uri]::EscapeDataString("$($PVELocation.storage):1,efitype=4m,format=raw,pre-enrolled-keys=1"))"
+$Body += "&net0=$([uri]::EscapeDataString("virtio,bridge=$($PVELocation.Interface),firewall=1"))"
+$Body += "&boot=$([uri]::EscapeDataString("order=net0"))"
 $Body += "&scsihw=virtio-scsi-single"
-$body += "&memory=$Memory"
-$body += "&balloon=2048"
-$body += "&cores=$Cores"
-$body += "&scsi0=$([uri]::EscapeDataString("$($PVELocation.storage):$($OSDisk),format=raw"))"
-$body += "&ide2=$([uri]::EscapeDataString("none,media=cdrom"))"
+$Body += "&memory=$Memory"
+$Body += "&balloon=2048"
+$Body += "&cores=$Cores"
+$Body += "&scsi0=$([uri]::EscapeDataString("$($PVELocation.storage):$($OSDisk),format=raw"))"
+$Body += "&ide2=$([uri]::EscapeDataString("none,media=cdrom"))"
 
 
 # Create the Template VM
 # ------------------------------------------------------------
-$VMCreate = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($MasterID.Node)/qemu/" -Body $body -Method POST -Headers $($PVEConnect.Headers)
+$VMCreate = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($MasterID.Node)/qemu/" -Body $Body -Method POST -Headers $($PVEConnect.Headers) -Verbose:$false
 Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -node $($MasterID.Node) -taskid $VMCreate.data
 
 

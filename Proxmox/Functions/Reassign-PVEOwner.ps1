@@ -1,11 +1,11 @@
 ﻿function Reassign-PVEOwner {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory)][string]$ProxmoxAPI=$($PVEConnect.PVEAPI),
-        [Parameter(Mandatory)][object]$Headers=$($PVEConnect.Headers),
-        [Parameter(Mandatory)][string]$SourceNode=$($MasterID.Node),
-        [Parameter(Mandatory)][string]$SourceVM=$($MasterID.VmID),
-        [Parameter(Mandatory)][string]$TargetVM=$VMID,
+        [Parameter(Mandatory)][string]$ProxmoxAPI,
+        [Parameter(Mandatory)][object]$Headers,
+        [Parameter(Mandatory)][string]$SourceNode,
+        [Parameter(Mandatory)][string]$SourceVM,
+        [Parameter(Mandatory)][string]$TargetVM,
         $SourceDisk,
         $TargetDisk,
         [string][ValidateSet("scsi","sata","virtio")]$DiskType="scsi|sata|virtio",
@@ -16,11 +16,11 @@
     # Get Drive to move..
     # ------------------------------------------------------------
     if ( ($null -eq $SourceDisk) -or ($SourceDisk -eq "First") ) {
-        $SourceVmData = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/config" -Headers $Headers).data
+        $SourceVmData = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/config" -Headers $Headers -Verbose:$false).data
         $SourceVMDisk = $SourceVmData.PSObject.Properties | Where-Object { $_.Name -match $DiskType -and $_.Value -like "*$SourceVM*"} | Sort-Object -Property Name | Select-Object -First 1
 
     } else {
-        $SourceVmData = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/config" -Headers $Headers).data
+        $SourceVmData = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/config" -Headers $Headers -Verbose:$false).data
         $SourceVMDisk = $SourceVmData.PSObject.Properties | Where-Object { $_.Name -eq $SourceDisk -and $_.Value -like "*$SourceVM*"}
     }
     
@@ -28,14 +28,14 @@
     # Detach disk from VM
     # ------------------------------------------------------------
     $Body = "delete=$($SourceVMDisk.name)"
-    $UnMount = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/config" -Body $Body -Method Post -Headers $Headers
+    $UnMount = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/config" -Body $Body -Method Post -Headers $Headers -Verbose:$false
 
     Start-PVEWait -ProxmoxAPI $ProxmoxAPI -Headers $Headers -node $($MasterID.Node) -taskid $UnMount.data
     
 
     # Get Target data.
     # ------------------------------------------------------------
-    $TargetVMData = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$TargetVM/config" -Method Get -Headers $Headers).data
+    $TargetVMData = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$TargetVM/config" -Method Get -Headers $Headers -Verbose:$false).data
 
 
     # Find Target Disk Number to use
@@ -49,7 +49,7 @@
         $Body += "&target-vmid=$TargetVM"
         $Body += "&disk=unused0"
         $Body += "&target-disk=$NextVMDisk"
-        $MoveDisk = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/move_disk" -Body $Body -Method Post -Headers $Headers
+        $MoveDisk = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/move_disk" -Body $Body -Method Post -Headers $Headers -Verbose:$false
 
 
     } else {
@@ -65,7 +65,7 @@
         $Body += "&target-vmid=$TargetVM"
         $Body += "&disk=unused0"
         $Body += "&target-disk=$TargetDisk"
-        $MoveDisk = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/move_disk" -Body $Body -Method Post -Headers $Headers
+        $MoveDisk = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$SourceNode/qemu/$SourceVM/move_disk" -Body $Body -Method Post -Headers $Headers -Verbose:$false
 
     }
 

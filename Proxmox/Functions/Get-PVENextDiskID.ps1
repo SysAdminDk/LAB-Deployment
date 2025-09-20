@@ -9,7 +9,7 @@
 
     # Get VM Status
     # ------------------------------------------------------------
-    $VMStatus = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$Node/qemu/$VMID/config" -Headers $Headers).data
+    $VMStatus = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$Node/qemu/$VMID/config" -Headers $Headers -Verbose:$false).data
 
 
     # Get first boot device from list.

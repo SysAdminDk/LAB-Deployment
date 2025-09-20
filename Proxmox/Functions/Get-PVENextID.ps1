@@ -9,7 +9,7 @@
 
     # Get all cluster VMs
     # ------------------------------------------------------------
-    $allVMs = (Invoke-RestMethod -Uri "$ProxmoxAPI/cluster/resources?type=vm" -Headers $Headers).data | Select-Object vmid, name
+    $allVMs = (Invoke-RestMethod -Uri "$ProxmoxAPI/cluster/resources?type=vm" -Headers $Headers -Verbose:$false).data | Select-Object vmid, name
 
     # Extract used IDs
     # ------------------------------------------------------------

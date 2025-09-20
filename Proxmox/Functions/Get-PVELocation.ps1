@@ -15,7 +15,7 @@
     Try {
         $NodesData = @()
 
-        $NodesQuery = (Invoke-RestMethod -Uri "$ProxmoxAPI/cluster/status" -Headers $Headers).data | Where {$_.type -eq "node"}
+        $NodesQuery = (Invoke-RestMethod -Uri "$ProxmoxAPI/cluster/status" -Headers $Headers -Verbose:$false).data | Where {$_.type -eq "node"}
         
         foreach ($Node in $NodesQuery) {
             $NodeDataArray = @(
@@ -37,7 +37,7 @@
         $StorageData = @()
 
         foreach ($Node in $NodesData) {
-            $NodeStorageQuery = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$($Node.name)/storage" -Headers $Headers).data | Where {$_.content -like "*images*"}
+            $NodeStorageQuery = (Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$($Node.name)/storage" -Headers $Headers -Verbose:$false).data | Where {$_.content -like "*images*"}
 
             foreach ($Storage in $NodeStorageQuery) {
                 $NodeStorageArray = @(
@@ -69,7 +69,7 @@
 
         foreach ($Node in $NodesData) {
 
-            $NodeBridgeQuery = ((Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$($Node.name)/network" -Method Get -Headers $Headers).data | where {$_.Type -eq "bridge"}) | Select-Object iface,address,cidr
+            $NodeBridgeQuery = ((Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$($Node.name)/network" -Method Get -Headers $Headers -Verbose:$false).data | where {$_.Type -eq "bridge"}) | Select-Object iface,address,cidr
 
             foreach ($Bridge in $NodeBridgeQuery) {
                 $NodeBridgeArray = @(

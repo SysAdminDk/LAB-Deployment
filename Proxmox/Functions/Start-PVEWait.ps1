@@ -12,7 +12,7 @@
     $EndTime = $StartTime.AddSeconds($TimeoutSeconds)
 
     do {
-        $TaskStatus = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$Node/tasks/$Taskid/status" -Headers $headers
+        $TaskStatus = Invoke-RestMethod -Uri "$ProxmoxAPI/nodes/$Node/tasks/$Taskid/status" -Headers $headers -Verbose:$false
         
         if ($TaskStatus.data.status -ne "running") {
             Write-Progress -Activity "Waiting for PVE Task ($($TaskStatus.data.type))" -Status "Completed" -PercentComplete 100 -Completed
