@@ -170,9 +170,21 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
         }
 
         Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:0
+        Remove-Item -Path $(Get-ChildItem -Path "$($ENV:USERPROFILE)\Downloads\ADTiering" -Filter "*.csv").FullName
+
         & "$($ENV:USERPROFILE)\Downloads\ADTiering\Deploy-TSxADTiering.ps1" -CompanyName MyCompany -TierOUName Admin -NoOfTiers 1 -SkipTierEndpointsPAW -SkipTierEndpoints -SkipComputerRedirect -WindowsLAPSOnly
 
-        Import-Module "$($ENV:USERPROFILE)\Downloads\ADTiering\TSxTieringModule\TSxTieringModule.psm1" -Force -Verbose
+
+        # Create Fabric OUs
+        Import-Module "$($ENV:USERPROFILE)\Downloads\ADTiering\TSxTieringModule\TSxTieringModule.psm1" -Force
+        New-TSxSubOU -Tier T0 -Name "DeployentServers" -Description 'Tier0 - Deployment Server' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
+        New-TSxSubOU -Tier T0 -Name "AzureLocalServers" -Description 'Tier0 - Azure Local Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
+        New-TSxSubOU -Tier T1 -Name "RemoteDesktopGatewayServers" -Description 'Tier1 - Remote Desktop Gateway Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
+        New-TSxSubOU -Tier T1 -Name "RemoteDesktopMFAServers" -Description 'Tier1 - Remote Desktop MFA Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
+        New-TSxSubOU -Tier T1 -Name "RadiusServiceServers" -Description 'Tier1 - Radius Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
+        New-TSxSubOU -Tier T1 -Name "FileServers" -Description 'Tier1 - File Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
+
+
 
         $ADTieringPath = Split-Path -Path $ADTieringFile
         if (Test-Path -Path "$ADTieringPath\Users.txt") {
