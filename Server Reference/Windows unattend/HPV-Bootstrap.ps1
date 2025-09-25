@@ -77,7 +77,6 @@ foreach ($MediaDrive in $MediaDrives) {
             $Username   = (($HostConfig | Where {$_ -like "*user*"})[0])   -Replace("^(?:\w+):\s","")
             $Password   = ($HostConfig  | Where {$_ -like "*password*"})   -Replace("^(?:\w+):\s","")
             $DomainJoin = ($HostConfig  | Where {$_ -like "*DomainJoin*"}) -Replace("^(?:\w+):\s","")
-            $DomainJoin = ($HostConfig  | Where {$_ -like "*DomainJoin*"}) -Replace("^(?:\w+):\s","")
             $MachineOU  = ($HostConfig  | Where {$_ -like "*MachineOU*"})  -Replace("^(?:\w+):\s","")
 
 
@@ -115,6 +114,7 @@ foreach ($MediaDrive in $MediaDrives) {
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "AutoAdminLogon" -value 1
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -name "DefaultUserName" -value $Username -Force
             Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultPassword" -Value $Password -Force
+            Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" -Name "DefaultDomainName" -Value $DomainName -Force
 
 
             # Registry Run
@@ -127,18 +127,10 @@ foreach ($MediaDrive in $MediaDrives) {
 }
 
 
-# Function - Extract network prefix
-# ------------------------------------------------------------
-function Get-NetworkPrefix {
-    param([string]$Ip)
-    return ($Ip -split '\.')[0..2] -join "."
-}
-
-
 # If Domain Join..
 # ------------------------------------------------------------
-$ServerPrefix = Get-NetworkPrefix $Address
-$DnsPrefixes = $DNSServers | ForEach-Object { Get-NetworkPrefix $_ } | Sort-Object -Unique
+$ServerPrefix = ($IPAddress -split("\."))[0..2] -join(".")
+$DnsPrefixes = $DNSServers | ForEach-Object { ($_ -split("\."))[0..2] -join(".") } | Sort-Object -Unique
 
 if ($DnsPrefixes -contains $ServerPrefix) {
 
@@ -162,7 +154,7 @@ if ($DnsPrefixes -contains $ServerPrefix) {
         $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $CryptPassword)    
     }
 
-    if ($null -ne $MachineOU) {
+    if ($MachineOU) {
         $DomainDN = (($DomainName -split("\.")) | ForEach-Object { "DC=$($_)" }) -join(",")
         $JoinMachineOU = @($MachineOU ,$DomainDN) -Join(",")
 

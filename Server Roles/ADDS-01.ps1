@@ -17,9 +17,14 @@
     Gather required data from Cloud Init
 
 #>
-# Find Media Drive.
+
+(Get-WmiObject -Class Win32_volume).name
+
+# Find Data on Media Drive.
 # ------------------------------------------------------------
-$MediaDrives = Get-WmiObject -Class Win32_volume -Filter "DriveType = '5'"
+$MediaDrives = @()
+$MediaDrives += Get-WmiObject -Class Win32_volume -filter "DriveLetter = '$($ENV:SYSTEMDRIVE)'"
+$MediaDrives += Get-WmiObject -Class Win32_volume -Filter "DriveType = '5'"
 foreach ($MediaDrive in $MediaDrives) {
 
     # Get content from User Data 
@@ -33,17 +38,16 @@ foreach ($MediaDrive in $MediaDrives) {
     # Locate TS AD Tiering tools
     # ------------------------------------------------------------
     $ADTieringFile = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "ADTiering.zip" -ErrorAction SilentlyContinue
-
+    $InitialUsers = Get-ChildItem -Path $MediaDrive.Name -Recurse -Filter "users.txt" -ErrorAction SilentlyContinue
+    
 }
 
 
-# Host Config
-# ------------------------------------------------------------
 if ($HostConfig) {
 
     # Extract values from User Data
     # ------------------------------------------------------------
-    $DomainName = (($HostConfig | Where {$_ -like "*fqdn*"})     -Replace("^(?:\w+):\s","") -split("\.", 2))[1]
+    $DomainName = "Fabric.SecInfra.Dk" #(($HostConfig | Where {$_ -like "*fqdn*"})     -Replace("^(?:\w+):\s","") -split("\.", 2))[1]
     $Username =   (($HostConfig | Where {$_ -like "*user*"})[0]) -Replace("^(?:\w+):\s","")
     $Password =   ($HostConfig  | Where {$_ -like "*password*"}) -Replace("^(?:\w+):\s","")
 }
@@ -105,7 +109,7 @@ if (!((gwmi win32_computersystem).partofdomain)) {
     }
     Catch {
 
-        # Setup Domain, with Random restore mode password, will be handled with Windows Laps later.
+        # Setup Domain, with Random restore mode password, will be handled with Windows LAPS later.
         # --------------------------------------------------------------------------------------------------
         $PWString = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 25 | ForEach-Object {[char]$_})
         $SecurePassword = ConvertTo-SecureString -string $PWString -AsPlainText -Force
@@ -146,12 +150,17 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
 
     # Add Reverse lookup DNS Zone
     # --------------------------------------------------------------------------------------------------
-    $DNSZone = (($CurrentIP.IPAddress -split("\.")) | Select-Object -SkipLast 1) -join(".")
+    $DNSSubnet = (($CurrentIP.IPAddress -split("\.")) | Select-Object -SkipLast 1)
+    $DNSZoneName = $DNSSubnet
 
-    if (!(Get-DnsServerZone -Name "$DNSZone.in-addr.arpa" -ErrorAction SilentlyContinue)) {
-        $IPSubnet = "$DNSZone.0/24"
+    $([array]::Reverse($DNSZoneName))
+    $DNSZoneName = "$($DNSZoneName -join(".")).in-addr.arpa"
+
+    if (!(Get-DnsServerZone -Name $DNSZoneName -ErrorAction SilentlyContinue)) {
+        $IPSubnet = "$($DNSSubnet  -join(".")).0/24"
         Add-DnsServerPrimaryZone -NetworkID $IPSubnet -ReplicationScope "Forest"
     }
+
 
 
     # Create DNS Subnet
@@ -166,29 +175,30 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
     # --------------------------------------------------------------------------------------------------
     if ($ADTieringFile) { 
         if (Test-Path -Path "$($ENV:USERPROFILE)\Downloads") {
-            Expand-Archive -Path $ADTieringFile -DestinationPath "$($ENV:USERPROFILE)\Downloads"
+            Expand-Archive -Path $ADTieringFile.FullName -DestinationPath "$($ENV:USERPROFILE)\Downloads" -Force
         }
 
-        Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:0
-        Remove-Item -Path $(Get-ChildItem -Path "$($ENV:USERPROFILE)\Downloads\ADTiering" -Filter "*.csv").FullName
+        # Update the ExtraOrganizationalUnits file
+        # --------------------------------------------------------------------------------------------------
+        $ExtraOrganizationalUnits = @()
+        $ExtraOrganizationalUnits += "Name, Tier, Description"
+        $ExtraOrganizationalUnits += "GenericServers,T0,Tier0 Generic Servers"
+        $ExtraOrganizationalUnits += "DeployentServers,T0,Tier0 Deployment Servers"
+        $ExtraOrganizationalUnits += "AzureLocalServers,T0,Tier0 Azure Local Servers"
+        $ExtraOrganizationalUnits += "GenericServers,T1,Tier1 Generic Servers"
+        $ExtraOrganizationalUnits += "RemoteDesktopGatewayServers,T1,Tier1 Remote Desktop Gateway Servers"
+        $ExtraOrganizationalUnits += "RemoteDesktopNPASServers,T1,Tier1 Remote Desktop NPAS Servers (MFA)"
+        $ExtraOrganizationalUnits += "RadiusBackendServers,T1,Tier1 - Radius Authentication Servers"
+        $ExtraOrganizationalUnits += "FileServers,T1,Tier0 File Servers"
+        
+        $ExtraOrganizationalUnits | Out-File (Get-ChildItem -Path "$($ENV:USERPROFILE)\Downloads\ADTiering" -Filter "*.csv").fullname -Encoding utf8 -Force
 
+        Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:0
         & "$($ENV:USERPROFILE)\Downloads\ADTiering\Deploy-TSxADTiering.ps1" -CompanyName MyCompany -TierOUName Admin -NoOfTiers 1 -SkipTierEndpointsPAW -SkipTierEndpoints -SkipComputerRedirect -WindowsLAPSOnly
 
 
-        # Create Fabric OUs
-        Import-Module "$($ENV:USERPROFILE)\Downloads\ADTiering\TSxTieringModule\TSxTieringModule.psm1" -Force
-        New-TSxSubOU -Tier T0 -Name "DeployentServers" -Description 'Tier0 - Deployment Server' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
-        New-TSxSubOU -Tier T0 -Name "AzureLocalServers" -Description 'Tier0 - Azure Local Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
-        New-TSxSubOU -Tier T1 -Name "RemoteDesktopGatewayServers" -Description 'Tier1 - Remote Desktop Gateway Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
-        New-TSxSubOU -Tier T1 -Name "RemoteDesktopMFAServers" -Description 'Tier1 - Remote Desktop MFA Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
-        New-TSxSubOU -Tier T1 -Name "RadiusServiceServers" -Description 'Tier1 - Radius Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
-        New-TSxSubOU -Tier T1 -Name "FileServers" -Description 'Tier1 - File Servers' -TierOUName Admin -CompanyName NA -WindowsLAPSOnly -Cleanup
-
-
-
-        $ADTieringPath = Split-Path -Path $ADTieringFile
-        if (Test-Path -Path "$ADTieringPath\Users.txt") {
-            $UserList = Get-Content -Path "$ADTieringPath\Users.txt"
+        if (Test-Path -Path $InitialUsers.FullName) {
+            $UserList = Get-Content -Path $InitialUsers.FullName
 
             $CreatedUsers = @()
             $UserList | ForEach-Object {
@@ -199,6 +209,51 @@ if ((gwmi win32_computersystem).DomainRole -eq 5) {
             }
             $CreatedUsers | Out-File "$($ENV:USERPROFILE)\Documents\CreatedUsers.txt" -Append
         }
+
+
+        # Get MY Install MSFT Baselines script.
+        # --------------------------------------------------------------------------------------------------
+        $Uri = "https://api.github.com/repos/SysAdminDk/MS-Infrastructure/contents/ADDS%20Scripts/Security%20Baselines/MSFT%20Baseline?ref=$Branch"
+        $Files = Invoke-RestMethod -Uri $Uri -Headers @{ "User-Agent" = "Powershell" }
+
+        $Files | % { Invoke-WebRequest -Uri $_.download_url -OutFile "$($ENV:USERPROFILE)\Downloads\$($_.Name)" }
+
+
+        # Get MY Add WMI Filters script.
+        # --------------------------------------------------------------------------------------------------
+        $Uri = "https://api.github.com/repos/SysAdminDk/MS-Infrastructure/contents/ADDS%20Scripts/Security%20Baselines/WMI-Filters?ref=$Branch"
+        $Files = Invoke-RestMethod -Uri $Uri -Headers @{ "User-Agent" = "Powershell" }
+
+        $Files | % { Invoke-WebRequest -Uri $_.download_url -OutFile "$($ENV:USERPROFILE)\Downloads\$($_.Name)" }
+
+
+        # Get and install MSFT Baselines
+        # --------------------------------------------------------------------------------------------------
+        & "$($ENV:USERPROFILE)\Downloads\Import-MSFT-Baselines.ps1" -Path "$($ENV:USERPROFILE)\Downloads" -Action AutoInstall
+        & "$($ENV:USERPROFILE)\Downloads\Create-Overrides.ps1"
+        & "$($ENV:USERPROFILE)\Downloads\Update-MSFT-AuditPolicy.ps1"
+
+
+        # Create WMI Filters
+        # --------------------------------------------------------------------------------------------------
+        & "$($ENV:USERPROFILE)\Downloads\Create-WMIfilters.ps1"
+        & "$($ENV:USERPROFILE)\Downloads\Set-VMIFilters.ps1"
+
+
+        # Link MSFT Domain Controller Baselines to Domain Controllers OU
+        # --------------------------------------------------------------------------------------------------
+        Get-GPO -All | Where {$_.DisplayName -like "MSFT*Domain Controller"} | Sort-Object -Property DisplayName -Descending | New-GPLink -Target $(Get-ADDomain).DomainControllersContainer
+
+
+        # Link MSFT Baselines to Servers and JumpStations OUs
+        $SearchBase = (Get-ADOrganizationalUnit -Filter "Name -like '*Admin*'" -SearchScope OneLevel).DistinguishedName
+
+        $GPOTargets = @()
+        $GPOTargets += (Get-ADOrganizationalUnit -Filter "Name -like 'JumpStations*'" -SearchBase $SearchBase).DistinguishedName
+        $GPOTargets += (Get-ADOrganizationalUnit -Filter "Name -eq 'Servers'" -SearchBase $SearchBase).DistinguishedName
+
+        $GPOTargets | % { Get-GPO -All | Where {$_.DisplayName -like "MSFT*Member Server" -or $_.DisplayName -like "MSFT*Member Server*Overrides*"} | Sort-Object -Property DisplayName -Descending | New-GPLink -Target $_ }
+
     }
 
 
