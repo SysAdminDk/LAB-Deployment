@@ -1,10 +1,10 @@
 ﻿Function Get-PVENextDiskID {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory)][string]$ProxmoxAPI,
-        [Parameter(Mandatory)][object]$Headers,
-        [Parameter(Mandatory)][string]$Node,
-        [Parameter(Mandatory)][int]$VMID
+        [Parameter(Mandatory)][string]$ProxmoxAPI=$PVEConnect.PVEAPI,
+        [Parameter(Mandatory)][object]$Headers=$PVEConnect.Headers,
+        [Parameter(Mandatory)][string]$Node="NUC01",
+        [Parameter(Mandatory)][int]$VMID="36100211"
     )
 
     # Get VM Status
@@ -31,14 +31,15 @@
     # ------------------------------------------------------------
     $LastVMDisk = $VMStatus.PSObject.Properties | Where-Object { $_.Name -match "^$StorageController\d+$" } | Sort-Object Name | Select-Object -Last 1
 
-
     # Controller ID ++
     # ------------------------------------------------------------
     if ($LastVMDisk) {
         if ($LastVMDisk.Name -match '\d+$') {
             $VMDiskCount = [int]$matches[0] + 1
         }
+    } else {
+        $VMDiskCount = 0
     }
-
+    
     return "$StorageController$VMDiskCount"
 }
