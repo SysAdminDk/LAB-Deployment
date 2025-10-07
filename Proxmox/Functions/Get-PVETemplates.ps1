@@ -1,4 +1,9 @@
-﻿Function Get-PVETemplates {
+﻿<#
+
+    List all Templates.
+
+#>
+Function Get-PVETemplates {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)][string]$ProxmoxAPI,

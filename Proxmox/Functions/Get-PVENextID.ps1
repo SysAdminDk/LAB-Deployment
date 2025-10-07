@@ -1,4 +1,9 @@
-﻿function Get-PVENextID {
+﻿<#
+
+    Generate random VM ID.
+
+#>
+function Get-PVENextID {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)][string]$ProxmoxAPI,

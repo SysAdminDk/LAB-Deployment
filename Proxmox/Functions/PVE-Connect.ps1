@@ -1,4 +1,9 @@
-﻿function PVE-Connect {
+﻿<#
+
+    Connecto to PVE cluster.
+
+#>
+function PVE-Connect {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)][string]$Authkey,

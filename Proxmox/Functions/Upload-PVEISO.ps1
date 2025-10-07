@@ -1,4 +1,10 @@
-﻿function Upload-PVEISO {
+﻿<#
+
+    Custom hacked script to upload ISO files to PVE Iso storage.
+    - I use this to upload the custom Cloud Init disks, see New-PVEServer.ps1
+
+#>
+function Upload-PVEISO {
     param(
         [string]$ProxmoxAPI,
         [Object]$Headers,

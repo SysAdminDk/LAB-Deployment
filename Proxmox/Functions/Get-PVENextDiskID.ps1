@@ -1,4 +1,9 @@
-﻿Function Get-PVENextDiskID {
+﻿<#
+
+    Get drives attached to a VM, and get next avalible drive ID, used when adding disk(s)
+
+#>
+Function Get-PVENextDiskID {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)][string]$ProxmoxAPI=$PVEConnect.PVEAPI,

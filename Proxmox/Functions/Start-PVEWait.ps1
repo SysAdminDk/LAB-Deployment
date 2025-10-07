@@ -1,4 +1,9 @@
-﻿function Start-PVEWait {
+﻿<#
+
+    Get and Wait on PVE task.
+
+#>
+function Start-PVEWait {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)][string]$ProxmoxAPI,

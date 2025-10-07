@@ -1,4 +1,9 @@
-﻿function Get-PVELocation {
+﻿<#
+
+    Connecto to PVE cluster, and used PS Gridview to select Node, Storage, Bridge the VM will be created and connected to.
+
+#>
+function Get-PVELocation {
     [CmdletBinding()]
     Param(
         [Parameter(Position=0,Mandatory)][string]$ProxmoxAPI,

@@ -1,4 +1,21 @@
-﻿Function Move-PVEVM {
+﻿<#
+
+    Move VM between Nodes and storage on Nodes.
+
+    # Examples.
+
+    # Move All VM Disks to other Storage on same node.
+    Move-PVEVM -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers) -VMID 100 -SourceNode NODE1 -TargetNode NODE01 -Targetstorage local-lvm
+
+    # Move Node, require same storage name
+    Move-PVEVM -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers) -VMID 100 -SourceNode NODE1 -TargetNode NODE02
+
+    # Move Node, other storage location.
+    Move-PVEVM -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers) -VMID 100 -SourceNode NODE1 -TargetNode NODE02 -Targetstorage local-lvm
+
+
+#>
+Function Move-PVEVM {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory)][string]$ProxmoxAPI,
@@ -50,18 +67,3 @@
         return
     }
 }
-
-<#
-
-# Examples.
-
-# Move All VM Disks to other Storage on same node.
-Move-PVEVM -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers) -VMID 100 -SourceNode NODE1 -TargetNode NODE02 -Targetstorage local-lvm
-
-# Move Node, require same storage name
-Move-PVEVM -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers) -VMID 100 -SourceNode NODE1 -TargetNode NODE02
-
-# Move Node, other storage location.
-Move-PVEVM -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers) -VMID 100 -SourceNode NODE1 -TargetNode NODE02 -Targetstorage local-lvm
-
-#>
