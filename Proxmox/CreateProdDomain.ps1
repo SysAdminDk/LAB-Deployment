@@ -40,18 +40,24 @@
 
 #>
 
+
+$RootPath = "D:\PVE Scripts"
+
+
 $DefaultUser = "Administrator"
 $DefaultPass = "P@ssword2025.!!"
 
-# Import my PVE modules
+
+# Import PVE modules
 # ------------------------------------------------------------
-Get-ChildItem -Path "D:\PVE Scripts\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:$false
+Get-ChildItem -Path "$RootPath\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
 
 
 # Connect to PVE Cluster
 # ------------------------------------------------------------
-#$PVEConnect = PVE-Connect -Authkey "root@pam!Powershell=16dcf2b5-1ca1-41cd-9e97-3c1d3d308ec0" -Hostaddr "10.36.1.27"
-$PVEConnect = PVE-Connect -Authkey "root@pam!Powershell-Access=dfcf6742-f05d-465a-ae34-2f96b5aebfca" -Hostaddr "10.36.1.22"
+$PVESecret = Get-Content "$RootPath\PVE-Secret.json" | Convertfrom-Json
+$PVEConnect = PVE-Connect -Authkey "$($PVESecret.User)!$($PVESecret.TokenID)=$($PVESecret.Token)" -Hostaddr $($PVESecret.Host)
 
 
 # Get the Deployment server info

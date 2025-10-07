@@ -26,13 +26,19 @@
 #>
 
 
+$RootPath = "D:\PVE Scripts"
+
+
+# Import PVE modules
+# ------------------------------------------------------------
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:$false
-Get-ChildItem -Path "D:\Deployment\Scripts\Proxmox\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
+Get-ChildItem -Path "$RootPath\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
 
 
 # Connect to PVE Cluster
 # ------------------------------------------------------------
-$PVEConnect = PVE-Connect -Authkey "root@pam!PowerShell=22c45e34-7a1b-4aa5-bf68-843780db6978" -Hostaddr "10.36.1.27"
+$PVESecret = Get-Content "$RootPath\PVE-Secret.json" | Convertfrom-Json
+$PVEConnect = PVE-Connect -Authkey "$($PVESecret.User)!$($PVESecret.TokenID)=$($PVESecret.Token)" -Hostaddr $($PVESecret.Host)
 
 
 # Get information required to create the template (VM)
