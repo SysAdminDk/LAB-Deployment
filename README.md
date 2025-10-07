@@ -9,21 +9,19 @@ Script in the Windows Servers contains individual server scripts.
   
   
 ## To get started.  
-### I will add PS script to create the LAB-Deploy VM, and get PVE to fetch the required files, later  
-
-Fetch latest Windows Server 2022 or 2025 ISO and upload to ISO Images data store.  
-Fetch latest VirtIO drivers from "https://pve.proxmox.com/wiki/Windows_VirtIO_Drivers" and upload to ISO Images data store.  
-
-Manually create the first VM - LAB-Deploy  
-- Add 50Gb OS Disk and 100Gb Data Disk. 
-- Attach Both the Win Install media and VirtIO-Win media
-
-Install Windows Server 2022 or 2025  
+Download the Functions folder, Create-DeploymentServer.ps1 and "PVE-Secret - Example.json"  
+Rename "PVE-Secret - Example.json" to "PVE-Secret.json" and update with your values.   
+Change Create-DeploymentServer.ps1 variable $RootPath, to where the Functions and PVE-Secret is located.  
   
-Download content of Proxmox folder to local disk. D:\  
-Fetch latest Windows Server 2022 or 2025 ISO and extract to D:\Server 2025 Files  
-Fetch latest VirtIO drivers from "https://pve.proxmox.com/wiki/Windows_VirtIO_Drivers" and extract to D:\Windows VirtIO Drivers  
+Execute Create-DeploymentServer.ps1, and the VM will be created and installation started, open PVE Console on the VM.  
+When install is done, rename server, install VirtIO drivers, and set / get IP Address.  
   
-Update the Unattend.xml with YOUR installation key, Org Name and Name.  
   
-Start the New-PVEVMTemplate.ps1, and
+Then VM Templates can be created with New-PVEVMTemplate.ps1.  
+If you also need 2022 template, mount the 2022 ISO and rerun.  
+  
+Now we are ready to spin up the LAB Domain(s) using CreateFabricDomain.ps1 and CreateProdDomain.ps1  
+  
+  
+### Azure Local and Hyper-V tests  
+If you want to play with Azure Local and setup the Fabric Domain on Hyper-V, use the Create-MSLAB-Nodes.ps1 to create the required VMs  
