@@ -26,9 +26,14 @@
 #>
 
 
+# Name of the "Master" VM
+# ------------------------------------------------------------
+$VMName = "DeployMaster"
+
+
 # Path to PVE scripts and Functions.
 # ------------------------------------------------------------
-$RootPath = "D:\PVE Scripts"
+$RootPath = "G:\Shares\Github Repositories\LAB-Deployment\Proxmox Scripts"
 
 
 # Import PVE modules
@@ -96,7 +101,7 @@ $VMID = Get-PVENextID -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.H
 # ------------------------------------------------------------
 $Body = "node=$($PVELocation.Name)"
 $Body += "&vmid=$VMID"
-$Body += "&name=LAB-Deployment"
+$Body += "&name=fsddfsdfa"
 $Body += "&bios=ovmf"
 $Body += "&cpu=host"
 $Body += "&ostype=win11"
@@ -104,7 +109,7 @@ $Body += "&machine=pc-q35-9.0"
 $Body += "&tpmstate0=$([uri]::EscapeDataString("$($PVELocation.storage):1,size=4M,version=v2.0"))"
 $Body += "&efidisk0=$([uri]::EscapeDataString("$($PVELocation.storage):1,efitype=4m,format=raw,pre-enrolled-keys=1"))"
 $Body += "&net0=$([uri]::EscapeDataString("virtio,bridge=$($PVELocation.Interface),firewall=1"))"
-$Body += "&boot=$([uri]::EscapeDataString("order=ide2"))"
+$Body += "&boot=$([uri]::EscapeDataString("order=scsi0;ide2"))"
 $Body += "&scsihw=virtio-scsi-single"
 $Body += "&memory=8192"
 $Body += "&balloon=2048"

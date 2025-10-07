@@ -52,6 +52,53 @@ $RootPath = "D:\PVE Scripts"
 
 $DefaultUser = "Administrator"
 $DefaultPass = "P@ssword2025.!!"
+$DefaultDomain = "Prod.SecInfra.Dk"
+
+# List of VMs to create.
+# ------------------------------------------------------------
+$VMConfig = @(
+    [PSCustomObject]@{ VMName = "ADDS-01";  IPAddress = "10.36.100.11"; VMCores=2;  VMMemory=4; OSDisk=50; } # Active Directory
+    [PSCustomObject]@{ VMName = "ADDS-02";  IPAddress = "10.36.100.12"; VMCores=2;  VMMemory=4; OSDisk=50; } # Active Directory
+    [PSCustomObject]@{ VMName = "ADDS-03";  IPAddress = "10.36.100.13"; VMCores=2;  VMMemory=4; OSDisk=50; } # Active Directory
+    [PSCustomObject]@{ VMName = "ADCA-01";  IPAddress = "10.36.100.16"; VMCores=2;  VMMemory=4; OSDisk=50; } # Certificate Auth
+    [PSCustomObject]@{ VMName = "AADC-01";  IPAddress = "10.36.100.18"; VMCores=2;  VMMemory=4; OSDisk=50; } # Entra Connect Sync
+    [PSCustomObject]@{ VMName = "AADC-02";  IPAddress = "10.36.100.19"; VMCores=2;  VMMemory=4; OSDisk=50; } # Entra Connect Sync
+    [PSCustomObject]@{ VMName = "AAPP-01";  IPAddress = "10.36.100.21"; VMCores=2;  VMMemory=4; OSDisk=50; } # Entra / Azure Password Protection Proxy
+    [PSCustomObject]@{ VMName = "AAPP-02";  IPAddress = "10.36.100.22"; VMCores=2;  VMMemory=4; OSDisk=50; } # Entra / Azure Password Protection Proxy
+    [PSCustomObject]@{ VMName = "MGMT-01";  IPAddress = "10.36.100.23"; VMCores=2;  VMMemory=4; OSDisk=50; } # T0 Management server / Jumpstation
+    [PSCustomObject]@{ VMName = "MGMT-02";  IPAddress = "10.36.100.24"; VMCores=2;  VMMemory=4; OSDisk=50; } # T0 Management server / Jumpstation
+    [PSCustomObject]@{ VMName = "RDGW-01";  IPAddress = "10.36.100.31"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop Gateway
+    [PSCustomObject]@{ VMName = "RDGW-02";  IPAddress = "10.36.100.32"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop Gateway
+    [PSCustomObject]@{ VMName = "AMFA-01";  IPAddress = "10.36.100.33"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop NPS MFA.
+    [PSCustomObject]@{ VMName = "AMFA-02";  IPAddress = "10.36.100.34"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop NPS MFA.
+    [PSCustomObject]@{ VMName = "MEAP-01";  IPAddress = "10.36.100.35"; VMCores=2;  VMMemory=4; OSDisk=50; } # Entra Application Proxy
+    [PSCustomObject]@{ VMName = "MEAP-02";  IPAddress = "10.36.100.36"; VMCores=2;  VMMemory=4; OSDisk=50; } # Entra Application Proxy
+    [PSCustomObject]@{ VMName = "RDDB-01";  IPAddress = "10.36.100.37"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop Connection Broker Database
+    [PSCustomObject]@{ VMName = "RDDB-02";  IPAddress = "10.36.100.38"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop Connection Broker Database
+    [PSCustomObject]@{ VMName = "RDCB-01";  IPAddress = "10.36.100.39"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop Connection Broker
+    [PSCustomObject]@{ VMName = "RDCB-02";  IPAddress = "10.36.100.40"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop Connection Broker
+    [PSCustomObject]@{ VMName = "RDLI-01";  IPAddress = "10.36.100.41"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop Licensing
+    [PSCustomObject]@{ VMName = "RDLI-02";  IPAddress = "10.36.100.42"; VMCores=2;  VMMemory=4; OSDisk=50; } # Remote Desktop Licensing
+#   [PSCustomObject]@{ VMName = "DHCP-01";  IPAddress = "10.36.100.44"; VMCores=2;  VMMemory=4; OSDisk=50; } # DHCP
+#   [PSCustomObject]@{ VMName = "DHCP-02";  IPAddress = "10.36.100.45"; VMCores=2;  VMMemory=4; OSDisk=50; } # DHCP
+#   [PSCustomObject]@{ VMName = "NPAS-01";  IPAddress = "10.36.100.46"; VMCores=2;  VMMemory=4; OSDisk=50; } # Always On VPN NPS
+#   [PSCustomObject]@{ VMName = "NPAS-02";  IPAddress = "10.36.100.47"; VMCores=2;  VMMemory=4; OSDisk=50; } # Always On VPN NPS
+#   [PSCustomObject]@{ VMName = "RRAS-01";  IPAddress = "10.36.100.48"; VMCores=2;  VMMemory=4; OSDisk=50; } # Always On VPN Remote Access
+#   [PSCustomObject]@{ VMName = "RRAS-02";  IPAddress = "10.36.100.49"; VMCores=2;  VMMemory=4; OSDisk=50; } # Always On VPN Remote Access
+    [PSCustomObject]@{ VMName = "DFSR-01";  IPAddress = "10.36.100.51"; VMCores=2;  VMMemory=4; OSDisk=50; } # Distributed File services (DFS-R)
+    [PSCustomObject]@{ VMName = "FILE-01";  IPAddress = "10.36.100.52"; VMCores=2;  VMMemory=4; OSDisk=50; } # File Service node
+    [PSCustomObject]@{ VMName = "FILE-02";  IPAddress = "10.36.100.53"; VMCores=2;  VMMemory=4; OSDisk=50; } # File Service node
+    [PSCustomObject]@{ VMName = "MGMT-11";  IPAddress = "10.36.100.55"; VMCores=2;  VMMemory=4; OSDisk=50; } # T1 Management server / Jumpstation
+    [PSCustomObject]@{ VMName = "MGMT-12";  IPAddress = "10.36.100.56"; VMCores=2;  VMMemory=4; OSDisk=50; } # T1 Management server / Jumpstation
+    [PSCustomObject]@{ VMName = "MGMT-13L"; IPAddress = "10.36.100.57"; VMCores=2;  VMMemory=4; OSDisk=50; } # T1 Limited Management server / Jumpstation
+    [PSCustomObject]@{ VMName = "MGMT-14L"; IPAddress = "10.36.100.58"; VMCores=2;  VMMemory=4; OSDisk=50; } # T1 Limited Management server / Jumpstation
+#   [PSCustomObject]@{ VMName = "MGMT-21";  IPAddress = "10.36.100.59"; VMCores=2;  VMMemory=4; OSDisk=50; } # T2 Management server / Jumpstation
+#   [PSCustomObject]@{ VMName = "MGMT-22";  IPAddress = "10.36.100.60"; VMCores=2;  VMMemory=4; OSDisk=50; } # T2 Management server / Jumpstation
+#   [PSCustomObject]@{ VMName = "MGMT-23L"; IPAddress = "10.36.100.61"; VMCores=2;  VMMemory=4; OSDisk=50; } # T2 Limited Management server / Jumpstation
+#   [PSCustomObject]@{ VMName = "MGMT-24L"; IPAddress = "10.36.100.62"; VMCores=2;  VMMemory=4; OSDisk=50; } # T2 Limited Management server / Jumpstation
+#   [PSCustomObject]@{ VMName = "MGMT-91";  IPAddress = "10.36.100.63"; VMCores=2;  VMMemory=4; OSDisk=50; } # T9 Endpoint Management server / Jumpstation
+#   [PSCustomObject]@{ VMName = "MGMT-92";  IPAddress = "10.36.100.64"; VMCores=2;  VMMemory=4; OSDisk=50; } # T9 Endpoint Management server / Jumpstation
+)
 
 
 # Import PVE modules
@@ -76,51 +123,17 @@ $MasterServer = Get-PVEServerID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConn
 $PVELocation = Get-PVELocation -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -IncludeNode $MasterServer.Node
 
 
-.\New-PVEServer.ps1 -NewVMFQDN "ADDS-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.11" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "ADDS-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.12" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "ADDS-03.Prod.SecInfra.Dk" -NewVmIp "10.36.100.13" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-
-.\New-PVEServer.ps1 -NewVMFQDN "ADCA-03.Prod.SecInfra.Dk" -NewVmIp "10.36.100.16" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-
-.\New-PVEServer.ps1 -NewVMFQDN "AADC-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.18" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 8 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "AADC-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.19" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 8 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "AAPP-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.21" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 8 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "AAPP-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.22" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 8 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "MGMT-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.23" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 8 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "MGMT-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.24" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 8 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-
-.\New-PVEServer.ps1 -NewVMFQDN "RDGW-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.31" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RDGW-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.32" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "AMFA-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.33" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "AMFA-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.34" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "MEAP-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.35" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "MEAP-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.36" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RDDB-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.37" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RDDB-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.38" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RDCB-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.39" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RDCB-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.40" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RDLI-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.41" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RDLI-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.42" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-
-.\New-PVEServer.ps1 -NewVMFQDN "DHCP-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.44" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "DHCP-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.45" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "NPAS-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.46" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "NPAS-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.47" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RRAS-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.48" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "RRAS-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.49" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-
-.\New-PVEServer.ps1 -NewVMFQDN "DFSR-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.51" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "FILE-02.Prod.SecInfra.Dk" -NewVmIp "10.36.100.52" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "FILE-01.Prod.SecInfra.Dk" -NewVmIp "10.36.100.53" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-
-.\New-PVEServer.ps1 -NewVMFQDN "MGMT-11.Prod.SecInfra.Dk" -NewVmIp "10.36.100.55" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "MGMT-12.Prod.SecInfra.Dk" -NewVmIp "10.36.100.56" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-.\New-PVEServer.ps1 -NewVMFQDN "MGMT-19.Prod.SecInfra.Dk" -NewVmIp "10.36.100.57" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-
-#.\New-PVEServer.ps1 -NewVMFQDN "MGMT-21.Prod.SecInfra.Dk" -NewVmIp "10.36.100.63" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-#.\New-PVEServer.ps1 -NewVMFQDN "MGMT-22.Prod.SecInfra.Dk" -NewVmIp "10.36.100.64" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-#.\New-PVEServer.ps1 -NewVMFQDN "MGMT-29.Prod.SecInfra.Dk" -NewVmIp "10.36.100.65" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-
-#.\New-PVEServer.ps1 -NewVMFQDN "MGMT-91.Prod.SecInfra.Dk" -NewVmIp "10.36.100.67" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-#.\New-PVEServer.ps1 -NewVMFQDN "MGMT-92.Prod.SecInfra.Dk" -NewVmIp "10.36.100.68" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
-#.\New-PVEServer.ps1 -NewVMFQDN "MGMT-99.Prod.SecInfra.Dk" -NewVmIp "10.36.100.69" -LocalUsername $DefaultUser -LocalPassword $DefaultPass -VMMemory 4 -VMCores 2 -OSDisk 50 -DefaultConnection $PVEConnect -DefaultLocation $PVELocation
+# Create the servers listed.
+# ------------------------------------------------------------
+$VMConfig | ForEach-Object {
+    Write-Host "Create Server : $($_.VMName).$DefaultDomain"
+    & "$RootPath\New-PVEServer.ps1" -NewVMFQDN "$($_.VMName).$DefaultDomain" `
+                                    -NewVmIp $_.IPAddress `
+                                    -LocalUsername $DefaultUser `
+                                    -LocalPassword $DefaultPass `
+                                    -VMMemory $_.VMMemory `
+                                    -VMCores $_.VMCores `
+                                    -OSDisk $_.OSDisk `
+                                    -DefaultConnection $PVEConnect `
+                                    -DefaultLocation $PVELocation
+}

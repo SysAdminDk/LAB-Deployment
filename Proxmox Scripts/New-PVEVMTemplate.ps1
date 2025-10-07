@@ -137,13 +137,13 @@ if ($null -eq $VHDDrive) {
     $ExcludeDrives += $(($env:SystemDrive) -replace(":",""))
     $ExcludeDrives += $VHDXDrive1.DriveLetter
     $ExcludeDrives += $VHDXDrive3.DriveLetter
-    $ExcludeDrives += $(Get-Volume | Where-Object {$_.drivetype -eq 'CD-ROM'}).DriveLetter
+    #$ExcludeDrives += $(Get-Volume | Where-Object {$_.drivetype -eq 'CD-ROM'}).DriveLetter
 
-    $Drives = Get-Volume | Where {$_.DriveLetter -notin $ExcludeDrives -and $_.DriveLetter -ne $null}
-    $FoundImages = $Drives | foreach { (Get-ChildItem -Path "$($_.DriveLetter):\" -Recurse -filter "install.wim" -ErrorAction SilentlyContinue).fullname }
+    $Drives.DriveLetter = Get-Volume | Where {$_.DriveLetter -notin $ExcludeDrives -and $_.DriveLetter -ne $null}
+    $FoundImages = $Drives | foreach { (Get-ChildItem -Path "$($_.DriveLetter):\" -Recurse -filter "install.wim" -ErrorAction SilentlyContinue).fullname } | Where-Object { $_ }
+    
 
-
-    if ($FoundImages.Count -gt 1) {
+    if ($FoundImages.GetType().BaseType -eq "System.Array") {
 
         $Images = @()
         Foreach ($Image in $FoundImages) {
@@ -159,7 +159,6 @@ if ($null -eq $VHDDrive) {
         $ImageInfo = Get-WindowsImage -ImagePath $FoundImages | Select-Object -Property ImageIndex, ImageName | Out-GridView -OutputMode Single
         $SelectedImage = $ImageInfo | % { [PSCustomObject]@{ Name = $_.ImageName;  Index = $_.ImageIndex; Path = $FoundImages } }
     }
-
 
 
     # Expand Selected Server Image
@@ -181,22 +180,6 @@ if ($null -eq $VHDDrive) {
     # Add Drivers
     # ------------------------------------------------------------
     $FoundDrivers | foreach { Add-WindowsDriver -Path "$VHDXVolume3" -Driver $_.FullName } | Out-Null
-
-
-    # Add default Unattend
-    # ------------------------------------------------------------
-    if (!(Test-Path -Path "$VHDXVolume3\Windows\Panther")) {
-        New-Item -Path "$VHDXVolume3\Windows\Panther" -ItemType Directory | Out-Null
-    }
-    Get-Content "D:\Windows unattend\Unattend.xml" | Out-File "$VHDXVolume3\Windows\Panther\unattend.xml" -Encoding utf8
-
-
-    # Add BootStrap script.
-    # ------------------------------------------------------------
-    if (!(Test-Path -Path "$VHDXVolume3\Scripts")) {
-        New-Item -Path "$VHDXVolume3\Scripts" -ItemType Directory | Out-Null
-    }
-    Copy-Item -Path "D:\Windows unattend\Bootstrap.ps1" -Destination "$VHDXVolume3\Scripts"
 
 
     # Offline disk
