@@ -1,6 +1,6 @@
 <# 
 
-    Create LAB Deployment server
+    Create Deployment server.
     4 vCpu
     8Gb Ram
     50Gb OS Drive
@@ -21,7 +21,7 @@
 
 
     When Done, Download required scripts from Git...
-
+    MS-Fabric\Deployment\* -> D:\Deployment\*
 
 #>
 
