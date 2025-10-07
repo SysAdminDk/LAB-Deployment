@@ -1,6 +1,6 @@
 <#
 
-    Create required servers for the FABRIC Domain.
+    Create required servers for the PROD Domain.
 
     Tier 0 (10 Servers)
     3 x Active Directory Domain Controllers
@@ -40,7 +40,13 @@
 
 #>
 
+# Do Not Just Execute.
+# ------------------------------------------------------------
+break
 
+
+# Path to PVE scripts and Functions.
+# ------------------------------------------------------------
 $RootPath = "D:\PVE Scripts"
 
 

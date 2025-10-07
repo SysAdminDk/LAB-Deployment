@@ -26,6 +26,8 @@
 #>
 
 
+# Path to PVE scripts and Functions.
+# ------------------------------------------------------------
 $RootPath = "D:\PVE Scripts"
 
 

@@ -1,10 +1,19 @@
 <#
 
-    Get required PROXMOX data
+    This script creates a PVE VM template.
+
+    Requires the "DeployMaster" server to be created and manual installed.
+    See Create-DeploymentServer.ps1.
 
 #>
 
+# Do Not Just Execute.
+# ------------------------------------------------------------
+break
 
+
+# Path to PVE scripts and Functions.
+# ------------------------------------------------------------
 $RootPath = "D:\PVE Scripts"
 
 
@@ -22,7 +31,7 @@ $PVEConnect = PVE-Connect -Authkey "$($PVESecret.User)!$($PVESecret.TokenID)=$($
 
 # Get Id of Deployment server....
 # ------------------------------------------------------------
-$MasterID = Get-PVEServerID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -ServerName "LAB-Deploy"
+$MasterID = Get-PVEServerID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -ServerName "DeployMaster"
 
 
 # Get information required to create the template (VM)

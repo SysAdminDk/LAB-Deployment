@@ -1,10 +1,12 @@
 <#
 
-    Get required PROXMOX data
+    If no CEPH storage, this can be used to copy templates between PVE nodes.
 
 #>
 
 
+# Path to PVE scripts and Functions.
+# ------------------------------------------------------------
 $RootPath = "D:\PVE Scripts"
 
 
@@ -40,6 +42,5 @@ foreach ($Template in $Templates) {
     Move-PVEVM -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -SourceNode $Template.Node -TargetNode $CopyLocation.Name -VMID $NextTemplateID -Targetstorage $CopyLocation.Storage # -Wait
 
     $null = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($CopyLocation.Name)/qemu/$NextTemplateID/template" -Method POST -Headers $($PVEConnect.Headers)
-
 
 }

@@ -14,7 +14,13 @@
 
 #>
 
+# Do Not Just Execute.
+# ------------------------------------------------------------
+break
 
+
+# Path to PVE scripts and Functions.
+# ------------------------------------------------------------
 $RootPath = "D:\PVE Scripts"
 
 

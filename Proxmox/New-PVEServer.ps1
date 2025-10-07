@@ -15,9 +15,16 @@
     [switch]$Start
 )
 
+
+# Path to PVE scripts and Functions.
+# ------------------------------------------------------------
 $RootPath = "D:\PVE Scripts"
 
 <#
+
+    This script creates new VM from selected template, see CreateProdDomain or CreateFabricDomain.
+
+
 
     1. User/script picks target node, storage, and network.
 
