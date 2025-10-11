@@ -26,13 +26,13 @@ $RootPath = "D:\PVE Scripts"
 # The IP is used to define the VMID in Proxmox
 # ------------------------------------------------------------
 $VMConfig = @(
-    [PSCustomObject]@{ Node = "HV-NODE-01"; IPAddress = "10.36.100.211"; Cpu=8;  Memory=32; OSDrive=50; DataDrives=@("400") }
-    [PSCustomObject]@{ Node = "HV-NODE-02"; IPAddress = "10.36.100.212"; Cpu=8;  Memory=32; OSDrive=50; DataDrives=@("400") }
-    [PSCustomObject]@{ Node = "AZ-NODE-01"; IPAddress = "10.36.100.221"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
-    [PSCustomObject]@{ Node = "AZ-NODE-02"; IPAddress = "10.36.100.222"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
-    [PSCustomObject]@{ Node = "AZ-NODE-03"; IPAddress = "10.36.100.223"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
-    [PSCustomObject]@{ Node = "AZ-NODE-04"; IPAddress = "10.36.100.224"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
-    [PSCustomObject]@{ Node = "AZ-NODE-05"; IPAddress = "10.36.100.225"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
+    [PSCustomObject]@{ Node = "HV-NODE-01"; IPAddress = "10.36.200.211"; Cpu=8;  Memory=32; OSDrive=50; DataDrives=@("400") }
+    [PSCustomObject]@{ Node = "HV-NODE-02"; IPAddress = "10.36.200.212"; Cpu=8;  Memory=32; OSDrive=50; DataDrives=@("400") }
+    [PSCustomObject]@{ Node = "AZ-NODE-01"; IPAddress = "10.36.200.221"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
+    [PSCustomObject]@{ Node = "AZ-NODE-02"; IPAddress = "10.36.200.222"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
+    [PSCustomObject]@{ Node = "AZ-NODE-03"; IPAddress = "10.36.200.223"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
+    [PSCustomObject]@{ Node = "AZ-NODE-04"; IPAddress = "10.36.200.224"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
+    [PSCustomObject]@{ Node = "AZ-NODE-05"; IPAddress = "10.36.200.225"; Cpu=16; Memory=64; OSDrive=50; DataDrives=@("500","500","500","500","500") }
 )
 
 

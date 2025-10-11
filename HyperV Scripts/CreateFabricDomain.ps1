@@ -1,7 +1,7 @@
 <#
 
     Requires
-    - PVE Node(s) with Disk, CPU and memory to handle the amount of VMs
+    - HyperV Node(s) with Disk, CPU and memory to handle the amount of VMs
     - Create Master Deployment server using, Create-DeploymentServer.ps1
     - VM Template(s) have been created using New-PVEVMTemplate.ps1
 
@@ -17,6 +17,7 @@
 
     Optional
     2 x Radius Servers (NPS)
+
 
 #>
 
@@ -54,39 +55,14 @@ $VMConfig = @(
 )
 
 
-# Import PVE modules
-# ------------------------------------------------------------
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:$false
-Get-ChildItem -Path "$RootPath\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
-
-
-# Connect to PVE Cluster
-# ------------------------------------------------------------
-$PVESecret = Get-Content "$RootPath\PVE-Secret.json" | Convertfrom-Json
-$PVEConnect = PVE-Connect -Authkey "$($PVESecret.User)!$($PVESecret.TokenID)=$($PVESecret.Token)" -Hostaddr $($PVESecret.Host)
-
-
-# Get the Deployment server info
-# ------------------------------------------------------------
-$MasterServer = Get-PVEServerID -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -ServerName "LAB-Deploy"
-
-
-# Get information required to create the template (VM)
-# ------------------------------------------------------------
-$PVELocation = Get-PVELocation -ProxmoxAPI $PVEConnect.PVEAPI -Headers $PVEConnect.Headers -IncludeNode $MasterServer.Node
-
-
 # Create the servers listed.
 # ------------------------------------------------------------
 $VMConfig | ForEach-Object {
     Write-Host "Create Server : $($_.VMName).$DefaultDomain"
-    & "$RootPath\New-PVEServer.ps1" -NewVMFQDN "$($_.VMName).$DefaultDomain" `
-                                    -NewVmIp $_.IPAddress `
-                                    -LocalUsername $DefaultUser `
-                                    -LocalPassword $DefaultPass `
-                                    -VMMemory $_.VMMemory `
-                                    -VMCores $_.VMCores `
-                                    -OSDisk $_.OSDisk `
-                                    -DefaultConnection $PVEConnect `
-                                    -DefaultLocation $PVELocation
+
+
+
+
+
+
 }

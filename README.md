@@ -23,3 +23,4 @@ Now we are ready to spin up the LAB Domain(s) using CreateFabricDomain.ps1 and C
   
 ### Azure Local and Hyper-V tests  
 If you want to play with Azure Local and setup the Fabric Domain on Hyper-V, use the Create-MSLAB-Nodes.ps1 to create the required VMs  
+  

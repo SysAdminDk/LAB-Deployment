@@ -42,7 +42,7 @@ $RootPath = "D:\PVE Scripts"
 # ------------------------------------------------------------
 $VMName = $(($NewVMFQDN -split("\."))[0])
 $VMID = (($($NewVmIp -Split("\."))[1]).PadLeft(2,"0")) + (($($NewVmIp -Split("\."))[2]).PadLeft(2,"0")) + (($($NewVmIp -Split("\."))[3]).PadLeft(3,"0"))
-$VmDomain = $(($NewVMFQDN -split("\."))[1..99]) -join(".")
+$VmDomain = $(($NewVMFQDN -split("\."))[1..9]) -join(".")
 $IPGateway = "$(($($NewVmIp -Split("\."))[0..2]) -join(".")).1"
 
 if ($null -eq $VMID) {
@@ -57,8 +57,7 @@ if ($NewVMFQDN -Like "ADDS-01*") {
 } else {
     $DNSServers = @(
         "$(($NewVmIp -split("\."))[0..2] -join(".")).11",
-        "$(($NewVmIp -split("\."))[0..2] -join(".")).12",
-        "$(($NewVmIp -split("\."))[0..2] -join(".")).13"
+        "$(($NewVmIp -split("\."))[0..2] -join(".")).12"
     )
 }
 
@@ -175,31 +174,10 @@ Write-Verbose "Proxmox: Create new VM: $VMName"
 # ------------------------------------------------------------
 $VMCreate = Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$($SelectedVMTemplate.VmID)/clone" -Body "newid=$VMID&name=$NewVMFQDN&full=1&storage=$($PVELocation.storage)" -Method Post -Headers $PVEConnect.Headers -Verbose:$false
 
+
 # Wait for clone...
 # ------------------------------------------------------------
 Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -node $($PVELocation.name) -taskid $VMCreate.data
-
-
-# Add Cloud Init drive, with bare minimum data.
-# ------------------------------------------------------------
-#$Body = "node=$($PVELocation.name)"
-#$Body += "&ide2=$($PVELocation.Storage):cloudinit"
-#$null = Invoke-RestMethod -Method POST -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $Body -Headers $PVEConnect.Headers
-
-
-# Set bare minimum data in Cloud Init.
-# ------------------------------------------------------------
-#$Body = "node=$($PVELocation.name)"
-#$Body += "&citype=configdrive2"
-#$Body += "&ciuser=$LocalUsername"
-#$Body += "&cipassword=$LocalPassword"
-#$Body += "&searchdomain=$VmDomain"
-#$Body += "&nameserver=$DNSServers"
-#$Body += "&ipconfig0=$([uri]::EscapeDataString("ip=$NewVmIp/24,gw=$IPGateway"))"
-#
-#$null = Invoke-RestMethod -Method POST -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/config" -Body $Body -Headers $PVEConnect.Headers
-#
-#$null = Invoke-RestMethod -Method PUT -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/qemu/$VMID/cloudinit" -Headers $PVEConnect.Headers
 
 
 # Create AutoUnattend media, and add required scripts.
@@ -246,17 +224,14 @@ If (!(Test-Path -Path "D:\$NewVMFQDN")) {
     $HostConfig | Out-File -FilePath "D:\$NewVMFQDN\OPENSTACK\LATEST\USER_DATA" -Encoding utf8 -Force
 
 
-    if (!(Test-Path -Path "D:\$NewVMFQDN\Windows DSC")) {
-        New-Item -Path "D:\$NewVMFQDN\Windows DSC" -ItemType Directory | Out-Null
-    }
-    Copy-Item -Path "D:\Server Roles" -Destination "D:\$NewVMFQDN\Windows DSC" -Recurse | Out-Null
-
     if ($VMName -eq "ADDS-01") {
         Copy-Item -Path "D:\TS-Data\ADTiering.zip" -Destination "D:\$NewVMFQDN" -Force
     }
 }
 
 New-ISOFileFromFolder -FilePath "D:\$NewVMFQDN" -Name "Unattend Media" -ResultFullFileName "D:\$NewVMFQDN.iso"
+
+
 
 Remove-Item -Path "D:\$NewVMFQDN" -Recurse -Force
 
