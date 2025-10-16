@@ -1,14 +1,14 @@
 # My LAP deployment.  
   
 After the Proxmox PVE nodes have been prepared, the following steps needed to create Fabric Domain with 3 Azure Local member nodes.  
-#### Create an API User,  
-#### Datacenter -> Permissions -> API Tokens -> Add  
-#### Example : User = root@pam, Token ID = PowerShell  
-#### Save secret to "PVE-Secret.json" (See /LAB-Deployment/Proxmox Scripts/PVE-Secret - Example.json)  
+Create an API User,  
+Datacenter -> Permissions -> API Tokens -> Add  
+Example : User = root@pam, Token ID = PowerShell  
+Save secret to "PVE-Secret.json" (See /LAB-Deployment/Proxmox Scripts/PVE-Secret - Example.json)  
   
-#### Assign Permissions,  
-#### Datacenter -> Permissions -> Add -> API Token Permissions.  
-#### Example : Path = /, API Token = root@pam!PowerShell, Role = PVEAdmin  
+Assign Permissions,  
+Datacenter -> Permissions -> Add -> API Token Permissions.  
+Example : Path = /, API Token = root@pam!PowerShell, Role = PVEAdmin  
   
 Then create a temp folder on any Windows computer with browser access to any of the PVE nodes.  
 Get a copy of /LAB-Deployment/Proxmox Scripts/Create-PVEDeploymentServer.ps1 script.
