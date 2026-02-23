@@ -1,6 +1,8 @@
 # My LAP deployment.  
   
-Installation and configuration of the PVE nodes, will not be covered here.
+# Work In Progress  
+  
+Installation and configuration of the PVE nodes, will not be covered here.  
   
   
 # In Proxmox PVE
