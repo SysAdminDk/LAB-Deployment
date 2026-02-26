@@ -1,0 +1,88 @@
+[
+    {
+        "Node":  "HV-NODE-01",
+        "IPAddress":  "10.36.200.211",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNSServers":  [
+                           "1.1.1.1",
+                           "1.0.0.1"
+                       ],
+        "Cpu":  8,
+        "Memory":  32,
+        "OSDrive":  50,
+        "DataDrives":  [
+                           "200"
+                       ]
+    },
+    {
+        "Node":  "HV-NODE-02",
+        "IPAddress":  "10.36.200.212",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNSServers":  [
+                           "1.1.1.1",
+                           "1.0.0.1"
+                       ],
+        "Cpu":  8,
+        "Memory":  32,
+        "OSDrive":  50,
+        "DataDrives":  [
+                           "200"
+                       ]
+    },
+    {
+        "Node":  "AZ-NODE-01",
+        "IPAddress":  "10.36.200.221",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNSServers":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cpu":  12,
+        "Memory":  48,
+        "OSDrive":  100,
+        "DataDrives":  [
+                           "200",
+                           "200",
+                           "200"
+                       ]
+    },
+    {
+        "Node":  "AZ-NODE-02",
+        "IPAddress":  "10.36.200.222",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNSServers":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cpu":  12,
+        "Memory":  48,
+        "OSDrive":  100,
+        "DataDrives":  [
+                           "200",
+                           "200",
+                           "200"
+                       ]
+    },
+    {
+        "Node":  "AZ-NODE-03",
+        "IPAddress":  "10.36.200.223",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNSServers":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cpu":  12,
+        "Memory":  48,
+        "OSDrive":  100,
+        "DataDrives":  [
+                           "200",
+                           "200",
+                           "200"
+                       ]
+    }
+]

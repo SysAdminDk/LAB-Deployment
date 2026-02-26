@@ -1,0 +1,246 @@
+[
+    {
+        "Name":  "ADDS-01",
+        "Address":  "10.36.200.11",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.1"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  [
+                     50,
+                     100
+                  ],
+        "Roles": [
+                     "AD-Domain-Services",
+                     "DNS"
+                 ],
+        "Tasks": [
+                     "/scripts/ADDS-01.ps1"
+                 ]
+    },
+    {
+        "Name":  "ADDS-02",
+        "DomainOU":  "",
+        "Address":  "10.36.200.12",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  [
+                     50,
+                     100
+                  ],
+        "Roles": [
+                     "AD-Domain-Services",
+                     "DNS"
+                 ],
+        "Tasks": [
+                     "/scripts/ADDS-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "MGMT-01",
+        "DomainOU":  "OU=JumpStations,OU=Tier0,OU=Admin",
+        "Address":  "10.36.200.23",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  4,
+        "Memory":  8,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/MGMT-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "MGMT-02",
+        "DomainOU":  "OU=JumpStations,OU=Tier0,OU=Admin",
+        "Address":  "10.36.200.24",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  4,
+        "Memory":  8,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/MGMT-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "MGMT-11",
+        "DomainOU":  "OU=JumpStations,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.55",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  4,
+        "Memory":  8,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/MGMT-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "MGMT-12",
+        "DomainOU":  "OU=JumpStations,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.56",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  4,
+        "Memory":  8,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/MGMT-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "RDGW-01",
+        "DomainOU":  "OU=RemoteDesktopGatewayServers,OU=Servers,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.31",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/RDGW-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "RDGW-02",
+        "DomainOU":  "OU=RemoteDesktopGatewayServers,OU=Servers,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.32",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/RDGW-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "AMFA-01",
+        "DomainOU":  "OU=RemoteDesktopNPASServers,OU=Servers,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.33",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/AMFA-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "AMFA-02",
+        "DomainOU":  "OU=RemoteDesktopNPASServers,OU=Servers,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.34",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/AMFA-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "NPAS-01",
+        "DomainOU":  "OU=RadiusBackendServers,OU=Servers,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.46",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/NPAS-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "NPAS-02",
+        "DomainOU":  "OU=RadiusBackendServers,OU=Servers,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.47",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/NPAS-0x.ps1"
+                 ]
+    },
+    {
+        "Name":  "FILE-01",
+        "DomainOU":  "OU=FileServers,OU=Servers,OU=Tier1,OU=Admin",
+        "Address":  "10.36.200.52",
+        "Subnet":  "255.255.255.0",
+        "Gateway":  "10.36.200.1",
+        "DNS":  [
+                           "10.36.200.11",
+                           "10.36.200.12"
+                       ],
+        "Cores":  2,
+        "Memory":  4,
+        "Disks":  50,
+        "Roles": "",
+        "Tasks": [
+                     "/scripts/FILE-0x.ps1"
+                 ]
+    }
+]
