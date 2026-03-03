@@ -18,8 +18,8 @@ break
 
 # Path to PVE scripts and Functions.
 # ------------------------------------------------------------
-$RootPath          = "G:\Shares\Personal Github\LAB-Deployment" # "C:\GitClone"
-$ScriptPath        = "G:\Shares\Personal Github\PVE-Platform" # Join-Path -Path $RootPath -ChildPath "PVE-Platform"
+$RootPath          = "\\10.36.1.32\MyGithub" # "C:\GitClone"
+$ScriptPath        = "\\10.36.1.32\MyGithub\PVE-Platform" # Join-Path -Path $RootPath -ChildPath "PVE-Platform"
 
 
 
@@ -35,6 +35,7 @@ $DefaultPass       = "DefaultPassword"
 $DefaultDomain     = "Fabric.SecInfra.Dk"
 $DefaultVLanId     = 200
 
+
 # Configure or extract the Vendor Max, will be used for all VMs created.
 # ------------------------------------------------------------
 #$MacPrefix         = "BC:24"
@@ -43,7 +44,8 @@ $VendorMac         = (((Get-NetAdapter).MacAddress -split("-"))[0..1]) -join("-"
 
 # List of VMs to create.
 # ------------------------------------------------------------
-$Servers = Get-Content "$RootPath\ConfigFiles\FabricDomain.json" | Convertfrom-Json
+# \\10.36.1.32\MyGithub\LAB-Deployment\ConfigFiles
+$Servers = Get-Content "$RootPath\LAB-Deployment\ConfigFiles\FabricDomain.json" | Convertfrom-Json
 
 
 # Import PVE modules
@@ -95,7 +97,7 @@ if ($Templates.Count -gt 1) {
 
 # Create the servers listed.
 # ------------------------------------------------------------
-Foreach ($Server in $Servers[0,1]) {
+Foreach ($Server in $Servers[0]) {
     Write-Host "Create Server : $($Server.Name).$DefaultDomain"
 
     if ($Server.DomainName) {

@@ -26,7 +26,7 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:$fals
 
 # Name of the "Master" VM
 # ------------------------------------------------------------
-$VMName = "Deployment"
+$VMName = "TempDepl"
 
 
 # Path to PVE scripts and Functions.
@@ -43,8 +43,8 @@ Get-ChildItem -Path "$ScriptPath\Functions" | ForEach-Object { Import-Module -Na
 # Import required Shared Modules ( MOVE Shared Functions )
 # ------------------------------------------------------------
 @("New-ISOFile.ps1", "new-Unattend.ps1") | ForEach-Object {
-    If (Test-Path "G:\PhysicalDriveBackup\Shares\New Github Repos\Shared Functions\$($_)") {
-        Import-Module -Name "G:\PhysicalDriveBackup\Shares\New Github Repos\Shared Functions\$($_)" -Force
+    If (Test-Path "G:\Shares\Personal Github\Shared-Functions\$($_)") {
+        Import-Module -Name "G:\Shares\Personal Github\Shared-Functions\$($_)" -Force
     }
 }
 
@@ -90,7 +90,7 @@ Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -no
 # Next avalible High VMID
 # ------------------------------------------------------------
 #$VMID = Get-PVENextID -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers)
-$VMID = "99999901"
+$VMID = "99999909"
 
 
 # Create Temp folder, to be converted to ISO.
@@ -147,8 +147,8 @@ $null = Upload-PVEISO -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.H
 
 # Get ISO Content and Add the files to the Deployment VM
 $ISOFiles      = ((Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/storage/$ISOStorage/content" -Headers $($PVEConnect.Headers)).data).volid
-$DriverMedia   = $ISOFiles | Where {$_ -like "*virtio*.iso"}
-$InstallMedia  = $ISOFiles | Where {$_ -like "*Server2025*.iso"}
+$DriverMedia   = $ISOFiles | Where {$_ -like "*$(($DriverResult.data -split(":"))[-3])"}
+$InstallMedia  = $ISOFiles | Where {$_ -like "*$(($2025Result.data -split(":"))[-3])"}
 $UnattendMedia = $ISOFiles | Where {$_ -like "*$VMID*.iso"}
 
 
