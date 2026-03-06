@@ -19,32 +19,28 @@
 #>
 
 
-# Required to import unsigned modules
-# ------------------------------------------------------------
-Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:$false
-
-
 # Name of the "Master" VM
 # ------------------------------------------------------------
-$VMName = "Deployment"
+$VMName = "Lab-Deploy"
 
 
 # Path to PVE scripts and Functions.
 # ------------------------------------------------------------
-$RootPath          = "\\10.36.1.32\MyGithub\LAB-Deployment" # "C:\GitClone"
-$ScriptPath        = "\\10.36.1.32\MyGithub\PVE-Platform" # Join-Path -Path $RootPath -ChildPath "PVE-Platform"
+$RootPath          = "\\10.36.1.32\NewGit"
+$ScriptPath        = Join-Path -Path $RootPath -ChildPath "PVE-Platform"
 
 
 # Import PVE modules
 # ------------------------------------------------------------
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:$false
 Get-ChildItem -Path "$ScriptPath\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
 
 
-# Import required Shared Modules ( MOVE Shared Functions )
+# Import required Shared Modules
 # ------------------------------------------------------------
 @("New-ISOFile.ps1", "new-Unattend.ps1") | ForEach-Object {
-    If (Test-Path "\\10.36.1.32\MyGithub\Shared-Functions\$($_)") {
-        Import-Module -Name "\\10.36.1.32\MyGithub\Shared-Functions\$($_)" -Force
+    If (Test-Path "$RootPath\Shared Functions\$($_)") {
+        Import-Module -Name "$RootPath\Shared Functions\$($_)" -Force
     }
 }
 
@@ -81,7 +77,7 @@ $DownloadBody += "&filename=$([uri]::EscapeDataString("virtio-win.iso"))"
 $DriverResult = Invoke-RestMethod -Method POST -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/storage/$ISOStorage/download-url" -Headers $($PVEConnect.Headers) -Body $DownloadBody
 
 
-# Wait both downloads.
+# Wait all 3 downloads.
 # ------------------------------------------------------------
 Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -node $($PVELocation.Name) -taskid $2025Result.data
 Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -node $($PVELocation.Name) -taskid $DriverResult.data
@@ -89,8 +85,7 @@ Start-PVEWait -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -no
 
 # Next avalible High VMID
 # ------------------------------------------------------------
-#$VMID = Get-PVENextID -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers)
-$VMID = "99999900"
+$VMID = Get-PVENextID -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers)
 
 
 # Create Temp folder, to be converted to ISO.
@@ -111,7 +106,7 @@ If (-NOT(Test-Path -Path "$($env:TEMP)\$VMID")) {
 if (-Not(Test-Path -Path "$($env:TEMP)\$VMID\Scripts")) {
     New-Item -Path "$($env:TEMP)\$VMID\Scripts" -ItemType Directory | Out-Null
 }
-Copy-Item -Path "\\10.36.1.32\MyGithub\MS-Platform\Deployment\Prep-DeploymentServer.ps1" -Destination "$($env:TEMP)\$VMID\Scripts" -Recurse -Force
+Copy-Item -Path "**GIT**\*" -Destination "$($env:TEMP)\$VMID\Scripts" -Recurse -Force
 
 
 ##############################################################
@@ -129,12 +124,12 @@ Copy-Item -Path "\\10.36.1.32\MyGithub\MS-Platform\Deployment\Prep-DeploymentSer
 #>
 New-Unattend -ComputerName $VMName -AdminUsername "Administrator" -AdminPassword "P@ssw0rd2025$" `
     -FirstLogonCommands @(
-        [PSCustomObject]@{ Name = "Add Drivers";  Command = "PowerShell -NoProfile -ExecutionPolicy Bypass -EncodedCommand RwBDAEkAIAAoACgAKABHAGUAdAAtAFYAbwBsAHUAbQBlACAALQBGAGkAbABlAFMAeQBzAHQAZQBtAEwAYQBiAGUAbAAgACIAdgBpAHIAdABpAG8ALQB3AGkAbgAqACIAKQAuAEQAcgBpAHYAZQBMAGUAdAB0AGUAcgApACAAKwAgACIAOgBcACIAKQAgAC0AUgBlAGMAdQByAHMAZQAgAC0ASQBuAGMAbAB1AGQAZQAgACoALgBpAG4AZgAgAHwAIAA/ACAAewAgACQAXwAuAEYAdQBsAGwATgBhAG0AZQAgAC0AbQBhAHQAYwBoACAAIgAyAEsAMgA1ACIAIAAtAGEAbgBkACAAJABfAC4ARgB1AGwAbABOAGEAbQBlACAALQBtAGEAdABjAGgAIAAiAEEATQBEACIAIAB9ACAAfAAgACUAIAB7ACAAcABuAHAAdQB0AGkAbAAgAC8AYQBkAGQALQBEAHIAaQB2AGUAcgAgACQAXwAuAEYAdQBsAGwATgBhAG0AZQAgAC8AaQBuAHMAdABhAGwAbAAgAH0A" }
-        [PSCustomObject]@{ Name = "Copy Scripts"; Command = "PowerShell -NoProfile -ExecutionPolicy Bypass -EncodedCommand RwBlAHQALQBWAG8AbAB1AG0AZQAgAHwAIABGAG8AcgBlAGEAYwBoACAAewAgAGkAZgAgACgAVABlAHMAdAAtAFAAYQB0AGgAIAAtAFAAYQB0AGgAIAAiACQAKAAkAF8ALgBEAHIAaQB2AGUATABlAHQAdABlAHIAKQA6AFwAUwBjAHIAaQBwAHQAcwAiACkAIAB7ACAAQwBvAHAAeQAtAEkAdABlAG0AIAAtAFAAYQB0AGgAIAAiACQAKAAkAF8ALgBEAHIAaQB2AGUATABlAHQAdABlAHIAKQA6AFwAUwBjAHIAaQBwAHQAcwAiACAALQBEAGUAcwB0AGkAbgBhAHQAaQBvAG4AIAAiACQAKAAkAGUAbgB2ADoAUwB5AHMAdABlAG0ARAByAGkAdgBlACkAIgAgAC0AUgBlAGMAdQByAHMAZQAgAC0ARgBvAHIAYwBlACAALQBFAHIAcgBvAHIAQQBjAHQAaQBvAG4AIABTAGkAbABlAG4AdABsAHkAQwBvAG4AdABpAG4AdQBlACAAfQAgAH0A" }
+        [PSCustomObject]@{ Name = "Add Drivers"; Command = "PowerShell -NoProfile -ExecutionPolicy Bypass -EncodedCommand RwBDAEkAIAAoACgAKABHAGUAdAAtAFYAbwBsAHUAbQBlACAALQBGAGkAbABlAFMAeQBzAHQAZQBtAEwAYQBiAGUAbAAgACIAdgBpAHIAdABpAG8ALQB3AGkAbgAqACIAKQAuAEQAcgBpAHYAZQBMAGUAdAB0AGUAcgApACAAKwAgACIAOgBcACIAKQAgAC0AUgBlAGMAdQByAHMAZQAgAC0ASQBuAGMAbAB1AGQAZQAgACoALgBpAG4AZgAgAHwAIAA/ACAAewAgACQAXwAuAEYAdQBsAGwATgBhAG0AZQAgAC0AbQBhAHQAYwBoACAAIgAyAEsAMgA1ACIAIAAtAGEAbgBkACAAJABfAC4ARgB1AGwAbABOAGEAbQBlACAALQBtAGEAdABjAGgAIAAiAEEATQBEACIAIAB9ACAAfAAgACUAIAB7ACAAcABuAHAAdQB0AGkAbAAgAC8AYQBkAGQALQBEAHIAaQB2AGUAcgAgACQAXwAuAEYAdQBsAGwATgBhAG0AZQAgAC8AaQBuAHMAdABhAGwAbAAgAH0A" }
+        [PSCustomObject]@{ Name = "Boot Strap";  Command = "PowerShell -NoProfile -ExecutionPolicy Bypass -EncodedCommand RwBlAHQALQBWAG8AbAB1AG0AZQAgAHwAIABGAG8AcgBlAGEAYwBoACAAewAgAGkAZgAgACgAVABlAHMAdAAtAFAAYQB0AGgAIAAtAFAAYQB0AGgAIAAiACQAKAAkAF8ALgBEAHIAaQB2AGUATABlAHQAdABlAHIAKQA6AFwAUwBjAHIAaQBwAHQAcwAiACkAIAB7ACAAQwBvAHAAeQAtAEkAdABlAG0AIAAtAFAAYQB0AGgAIAAiACQAKAAkAF8ALgBEAHIAaQB2AGUATABlAHQAdABlAHIAKQA6AFwAUwBjAHIAaQBwAHQAcwAiACAALQBEAGUAcwB0AGkAbgBhAHQAaQBvAG4AIAAiACQAKAAkAGUAbgB2ADoAUwB5AHMAdABlAG0ARAByAGkAdgBlACkAIgAgAC0AUgBlAGMAdQByAHMAZQAgAC0ARgBvAHIAYwBlACAALQBFAHIAcgBvAHIAQQBjAHQAaQBvAG4AIABTAGkAbABlAG4AdABsAHkAQwBvAG4AdABpAG4AdQBlACAAfQAgAH0A" }
     ) | `
     Out-File -FilePath "$($env:TEMP)\$VMID\AutoUnattend.xml" -Encoding utf8 -Force
 
-#Start "$($env:TEMP)\$VMID"
+#notepad "$($env:TEMP)\$VMID\AutoUnattend.xml"
 
 # Create Unattended ISO
 # ------------------------------------------------------------
@@ -143,14 +138,15 @@ $null = New-ISOFile -source "$($env:TEMP)\$VMID" -destinationIso "$($env:TEMP)\$
 
 # Upload ISO to PVE Node.
 # ------------------------------------------------------------
-$null = Upload-PVEISO -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $($PVEConnect.Headers) -Node $($PVELocation.Name) -Storage $ISOStorage -IsoPath "$($env:TEMP)\$VMID.iso"
+$null = Upload-PVEISO -ProxmoxAPI $($PVEConnect.PVEAPI) -Headers $PVEConnect.Headers -Node $($PVELocation.Name) -Storage $ISOStorage -IsoPath "$($env:TEMP)\$VMID.iso"
 
 
 # Get ISO Content and Add the files to the Deployment VM
 $ISOFiles      = ((Invoke-RestMethod -Uri "$($PVEConnect.PVEAPI)/nodes/$($PVELocation.name)/storage/$ISOStorage/content" -Headers $($PVEConnect.Headers)).data).volid
-$DriverMedia   = $ISOFiles | Where {$_ -like "*$(($DriverResult.data -split(":"))[-3])"}
-$InstallMedia  = $ISOFiles | Where {$_ -like "*$(($2025Result.data -split(":"))[-3])"}
+$DriverMedia   = $ISOFiles | Where {$_ -like "*virtio*.iso"}
+$InstallMedia  = $ISOFiles | Where {$_ -like "*server_2025*.iso"}
 $UnattendMedia = $ISOFiles | Where {$_ -like "*$VMID*.iso"}
+#$OtherMedia    = $ISOFiles | Where {$_ -Notin @($DriverMedia,$InstallMedia,$UnattendMedia) -and $_ -NotLike "*99999*.iso"}
 
 
 # Default Deployent Sever Configuration

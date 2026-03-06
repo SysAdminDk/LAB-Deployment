@@ -1,246 +1,680 @@
 [
     {
         "Name":  "ADDS-01",
-        "Address":  "10.36.200.11",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.1"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  [
-                     50,
-                     100
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Workgroup",
+                            "DomainOU":  "null",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC:24:0A:24:C8:0B",
+                        "IPv4Address":  "10.36.200.11",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "8.8.8.8",
+                                           "8.8.4.4"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  2,
+                         "MinMemory":  2,
+                         "MaxMemory":  4,
+                         "Disks":  {
+                                       "System":  "50",
+                                       "Data":  "100"
+                                   }
+                     },
+        "Roles":  [
+                      {
+                          "name":  "AD-Domain-Services",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "DNS",
+                          "status":  "pending"
+                      }
                   ],
-        "Roles": [
-                     "AD-Domain-Services",
-                     "DNS"
-                 ],
-        "Tasks": [
-                     "/scripts/ADDS-01.ps1"
-                 ]
+        "Tasks":  [
+                      {
+                          "name":  "ADDS-01.ps1",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "ADTiering.ps1",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "ADDS-WBackup.ps1",
+                          "status":  "pending"
+                      }
+                  ]
     },
     {
         "Name":  "ADDS-02",
-        "DomainOU":  "",
-        "Address":  "10.36.200.12",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  [
-                     50,
-                     100
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "null",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC:24:0A:24:C8:0C",
+                        "IPv4Address":  "10.36.200.12",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  2,
+                         "MinMemory":  2,
+                         "MaxMemory":  4,
+                         "Disks":  {
+                                       "System":  "50",
+                                       "Data":  "100"
+                                   }
+                     },
+        "Roles":  [
+                      {
+                          "name":  "AD-Domain-Services",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "DNS",
+                          "status":  "pending"
+                      }
                   ],
-        "Roles": [
-                     "AD-Domain-Services",
-                     "DNS"
-                 ],
-        "Tasks": [
-                     "/scripts/ADDS-0x.ps1"
-                 ]
+        "Tasks":  [
+                      {
+                          "name":  "ADDS-0x.ps1",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "ADDS-WBackup.ps1",
+                          "status":  "pending"
+                      }
+                  ]
     },
     {
         "Name":  "MGMT-01",
-        "DomainOU":  "OU=JumpStations,OU=Tier0,OU=Admin",
-        "Address":  "10.36.200.23",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  4,
-        "Memory":  8,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/MGMT-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=JumpStations,OU=Tier0,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-17",
+                        "IPv4Address":  "10.36.200.23",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  8,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  [
+                      {
+                          "name":  "GPMC",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-Clustering",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-AD-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-Hyper-V-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-RDS-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-ADCS",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-ADRMS",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DHCP",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DNS-Server",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DFS-Mgmt-Con",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-NPAS ",
+                          "status":  "pending"
+                      }
+                  ],
+        "Tasks":  {
+                      "name":  "MGMT-0x.ps1",
+                      "status":  "pending"
+                  }
     },
     {
         "Name":  "MGMT-02",
-        "DomainOU":  "OU=JumpStations,OU=Tier0,OU=Admin",
-        "Address":  "10.36.200.24",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  4,
-        "Memory":  8,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/MGMT-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=JumpStations,OU=Tier0,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-18",
+                        "IPv4Address":  "10.36.200.24",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  8,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  [
+                      {
+                          "name":  "GPMC",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-Clustering",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-AD-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-Hyper-V-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-RDS-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-ADCS",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-ADRMS",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DHCP",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DNS-Server",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DFS-Mgmt-Con",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-NPAS ",
+                          "status":  "pending"
+                      }
+                  ],
+        "Tasks":  {
+                      "name":  "MGMT-0x.ps1",
+                      "status":  "pending"
+                  }
     },
     {
         "Name":  "MGMT-11",
-        "DomainOU":  "OU=JumpStations,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.55",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  4,
-        "Memory":  8,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/MGMT-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=JumpStations,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-37",
+                        "IPv4Address":  "10.36.200.55",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  8,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  [
+                      {
+                          "name":  "GPMC",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-Clustering",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-AD-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-RDS-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-ADRMS",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DHCP",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DNS-Server",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DFS-Mgmt-Con",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-NPAS ",
+                          "status":  "pending"
+                      }
+                  ],
+        "Tasks":  {
+                      "name":  "MGMT-0x.ps1",
+                      "status":  "pending"
+                  }
     },
     {
         "Name":  "MGMT-12",
-        "DomainOU":  "OU=JumpStations,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.56",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  4,
-        "Memory":  8,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/MGMT-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=JumpStations,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-38",
+                        "IPv4Address":  "10.36.200.56",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  8,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  [
+                      {
+                          "name":  "GPMC",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-Clustering",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-AD-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-RDS-Tools",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-ADRMS",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DHCP",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DNS-Server",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-DFS-Mgmt-Con",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RSAT-NPAS ",
+                          "status":  "pending"
+                      }
+                  ],
+        "Tasks":  {
+                      "name":  "MGMT-0x.ps1",
+                      "status":  "pending"
+                  }
     },
     {
         "Name":  "RDGW-01",
-        "DomainOU":  "OU=RemoteDesktopGatewayServers,OU=Servers,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.31",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/RDGW-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=RemoteDesktopGatewayServers,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-1F",
+                        "IPv4Address":  "10.36.200.31",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  8,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  [
+                      {
+                          "name":  "NPAS",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RDS-Gateway",
+                          "status":  "pending"
+                      }
+                  ],
+        "Tasks":  {
+                      "name":  "RDGW-0x.ps1",
+                      "status":  "pending"
+                  }
     },
     {
         "Name":  "RDGW-02",
-        "DomainOU":  "OU=RemoteDesktopGatewayServers,OU=Servers,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.32",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/RDGW-0x.ps1"
-                 ]
-    },
-    {
-        "Name":  "AMFA-01",
-        "DomainOU":  "OU=RemoteDesktopNPASServers,OU=Servers,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.33",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/AMFA-0x.ps1"
-                 ]
-    },
-    {
-        "Name":  "AMFA-02",
-        "DomainOU":  "OU=RemoteDesktopNPASServers,OU=Servers,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.34",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/AMFA-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=RemoteDesktopGatewayServers,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-20",
+                        "IPv4Address":  "10.36.200.32",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  8,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  [
+                      {
+                          "name":  "NPAS",
+                          "status":  "pending"
+                      },
+                      {
+                          "name":  "RDS-Gateway",
+                          "status":  "pending"
+                      }
+                  ],
+        "Tasks":  {
+                      "name":  "RDGW-0x.ps1",
+                      "status":  "pending"
+                  }
     },
     {
         "Name":  "NPAS-01",
-        "DomainOU":  "OU=RadiusBackendServers,OU=Servers,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.46",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/NPAS-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=RadiusBackendServers,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-2E",
+                        "IPv4Address":  "10.36.200.46",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  4,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  {
+                      "name":  "NPAS",
+                      "status":  "pending"
+                  },
+        "Tasks":  {
+                      "name":  "NPAS-0x.ps1",
+                      "status":  "pending"
+                  }
     },
     {
         "Name":  "NPAS-02",
-        "DomainOU":  "OU=RadiusBackendServers,OU=Servers,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.47",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/NPAS-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=RadiusBackendServers,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-2F",
+                        "IPv4Address":  "10.36.200.47",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "Memory":  8,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  {
+                      "name":  "NPAS",
+                      "status":  "pending"
+                  },
+        "Tasks":  {
+                      "name":  "NPAS-0x.ps1",
+                      "status":  "pending"
+                  }
+    },
+    {
+        "Name":  "AMFA-01",
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=RemoteDesktopNPASServers,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-21",
+                        "IPv4Address":  "10.36.200.33",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  4,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  {
+                      "name":  "NPAS",
+                      "status":  "pending"
+                  },
+        "Tasks":  {
+                      "name":  "AMFA-0x.ps1",
+                      "status":  "pending"
+                  }
+    },
+    {
+        "Name":  "AMFA-02",
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=RemoteDesktopNPASServers,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-22",
+                        "IPv4Address":  "10.36.200.34",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  4,
+                         "Disks":  {
+                                       "System":  "50"
+                                   }
+                     },
+        "Roles":  {
+                      "name":  "NPAS",
+                      "status":  "pending"
+                  },
+        "Tasks":  {
+                      "name":  "AMFA-0x.ps1",
+                      "status":  "pending"
+                  }
     },
     {
         "Name":  "FILE-01",
-        "DomainOU":  "OU=FileServers,OU=Servers,OU=Tier1,OU=Admin",
-        "Address":  "10.36.200.52",
-        "Subnet":  "255.255.255.0",
-        "Gateway":  "10.36.200.1",
-        "DNS":  [
-                           "10.36.200.11",
-                           "10.36.200.12"
-                       ],
-        "Cores":  2,
-        "Memory":  4,
-        "Disks":  50,
-        "Roles": "",
-        "Tasks": [
-                     "/scripts/FILE-0x.ps1"
-                 ]
+        "DomainName":  "Fabric.SecInfra.Dk",
+        "JoinOptions":  {
+                            "UserDomain":  "Fabric",
+                            "OrganizationalUnit":  "OU=FileServers,OU=Tier1,OU=Admin",
+                            "Username":  "Administrator",
+                            "Password":  "RandomPasswordGennerated"
+                        },
+        "Network":  {
+                        "PhysicalAddress":  "BC-24-0A-24-C8-34",
+                        "IPv4Address":  "10.36.200.52",
+                        "SubnetMask":  "255.255.255.0",
+                        "DefaultGateway":  "10.36.200.1",
+                        "DNSServers":  [
+                                           "10.36.200.11",
+                                           "10.36.200.12"
+                                       ]
+                    },
+        "Hardware":  {
+                         "CPUSockets":  1,
+                         "CPUCores":  4,
+                         "MinMemory":  2,
+                         "MaxMemory":  4,
+                         "Disks":  {
+                                       "System":  "50",
+                                       "Data": [ 
+                                                        "300",
+                                                        "300"
+                                                    ]
+                                   }
+                     },
+        "Roles":  {
+                      "name":  "FS-FileServer",
+                      "status":  "pending"
+                  },
+        "Tasks":  {
+                      "name":  "FILE-0x.ps1",
+                      "status":  "pending"
+                  }
     }
 ]
