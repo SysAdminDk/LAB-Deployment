@@ -18,9 +18,7 @@ break
 
 # Path to PVE scripts and Functions.
 # ------------------------------------------------------------
-$RootPath          = "\\10.36.1.32\MyGithub" # "C:\GitClone"
-$ScriptPath        = "\\10.36.1.32\MyGithub\PVE-Platform" # Join-Path -Path $RootPath -ChildPath "PVE-Platform"
-
+$RootPath          = "D:\Scripts"
 
 
 # Download required files
@@ -32,42 +30,32 @@ $ScriptPath        = "\\10.36.1.32\MyGithub\PVE-Platform" # Join-Path -Path $Roo
 # ------------------------------------------------------------
 $DefaultUser       = "Administrator"
 $DefaultPass       = "DefaultPassword"
-$DefaultDomain     = "Fabric.SecInfra.Dk"
 $DefaultVLanId     = 200
 
 
 # Configure or extract the Vendor Max, will be used for all VMs created.
 # ------------------------------------------------------------
 #$MacPrefix         = "BC:24"
-$VendorMac         = (((Get-NetAdapter).MacAddress -split("-"))[0..1]) -join("-")
+#$VendorMac         = (((Get-NetAdapter).MacAddress -split("-"))[0..1]) -join("-")
 
 
 # List of VMs to create.
 # ------------------------------------------------------------
 # \\10.36.1.32\MyGithub\LAB-Deployment\ConfigFiles
-$Servers = Get-Content "$RootPath\LAB-Deployment\ConfigFiles\FabricDomain.json" | Convertfrom-Json
+$Servers = Get-Content "$RootPath\FabricDomain.json" | Convertfrom-Json
 
 
 # Import PVE modules
 # ------------------------------------------------------------
 Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force -Confirm:$false
-Get-ChildItem -Path "$ScriptPath\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
+Get-ChildItem -Path "$RootPath\Functions" | ForEach-Object { Import-Module -Name $_.FullName -Force }
 
-
-# Import required Shared Modules
-# ------------------------------------------------------------
-## @("New-ISOFile.ps1", "new-Unattend.ps1", "New-CloudInitDrive.ps1") | ForEach-Object {
-#@("new-Unattend.ps1") | ForEach-Object {
-#    If (Test-Path "$RootPath\Shared Functions\$($_)") {
-#        Import-Module -Name "$RootPath\Shared Functions\$($_)" -Force
-#    }
-#}
 
 
 
 # Connect to PVE Cluster
 # ------------------------------------------------------------
-$PVESecret = Get-Content "$ScriptPath\PVE-Secret.json" | Convertfrom-Json
+$PVESecret = Get-Content "$RootPath\PVE-Secret.json" | Convertfrom-Json
 $PVEConnect = PVE-Connect -Authkey "$($PVESecret.User)!$($PVESecret.TokenID)=$($PVESecret.Token)" -Hostaddr $($PVESecret.Host)
 
 
@@ -97,71 +85,41 @@ if ($Templates.Count -gt 1) {
 
 # Create the servers listed.
 # ------------------------------------------------------------
-Foreach ($Server in $Servers[0]) {
-    Write-Host "Create Server : $($Server.Name).$DefaultDomain"
+Foreach ($Server in $Servers) {
+    Write-Host "Create Server : $($Server.Name).$($Server.DomainName)"
 
-    if ($Server.DomainName) {
-        $Server.DomainName = $DefaultDomain
-    } else {
-        $Server | Add-Member -MemberType NoteProperty -Name DomainName -Value $DefaultDomain
-    }
 
-    # Find Server Boot Strap file.
+    # Extract required data from IP information
     # ------------------------------------------------------------
-#    $StartFile = Get-ChildItem -Path $RootPath -Recurse -Filter "$($Server.Name).ps1" -ErrorAction SilentlyContinue
-#    if (!($StartFile)) {
-#        $FileSearch = "$(($Server.Name -split("-"))[0])-0x"
-#        $StartFile = Get-ChildItem -Path $RootPath -Recurse -Filter "$FileSearch.ps1" -ErrorAction SilentlyContinue
-#    }
-
-    $JoinOptions = $null
-    if ($($Server.Name) -ne "ADDS-01") {
-        $JoinOptions = "$($DefaultUser):$($DefaultPass)"
-        if ($Server.JoinOptions) {
-            $Server.JoinOptions = $JoinOptions
-        } else {
-            $Server | Add-Member -MemberType NoteProperty -Name JoinOptions -Value $JoinOptions
-        }
-    }
-
-
-    # Convert IP 2 MAC
-    # ------------------------------------------------------------
-    $MACAddress = IP2Mac -IpAddress $Server.Address
-
-    if ($Server.MACAddress) {
-        $Server.MACAddress = $MACAddress
-    } else {
-        $Server | Add-Member -MemberType NoteProperty -Name MACAddress -Value $MACAddress
-    }
+    $MACAddress = $Server.Network.PhysicalAddress -replace(":","-")
+    $VLanId     = ($Server.Network.IPv4Address -split("\."))[-2]
     
+    $Disks = @()
+    $Disks += $Server.Hardware.Disks.System
+    $Disks += $($Server.Hardware.Disks.data | % { $_ })
+
 
     # Create Server in PVE
     # ------------------------------------------------------------
-    New-PVEServer -FQDN "$($Server.Name).$DefaultDomain" `
-                  -IpAddress $Server.Address `
-                  -IpSubnet $Server.Subnet `
-                  -IpGateway $Server.Gateway `
-                  -DnsServers $Server.DNS `
+<#
+    New-PVEServer -FQDN "$($Server.Name).$($Server.DomainName)" `
+
                   -NetAdapterMac $MACAddress `
-                  -vlan $DefaultVLanId `
-                  -VMMemory $Server.Memory `
-                  -LocalUsername $DefaultUser `
-                  -LocalPassword $DefaultPass `
-                  -DomainJoin $JoinOptions `
-                  -DomainOU $Server.DomainOU `
-                  -VMCores $Server.Cores `
-                  -Disks $Server.Disks `
+                  -vlan $VLanId `
+
+                  -VMMemory $Server.Hardware.MaxMemory `
+
+                  -VMCores $Server.Hardware.CPUCores `
+                  -Disks $($Disks -Join(",")) `
+
                   -DefaultConnection $PVEConnect `
                   -DefaultLocation $PVELocation `
-                  -ProductKey $DefaultProductKey `
-                  -Template $SelectedVMTemplate `
-                  -StartFile $StartFile.FullName
-
+                  -Template $SelectedVMTemplate
+#>
 
     # Create Server JSON file
     # ------------------------------------------------------------
-    $Server | Select-Object Name,DomainName,JoinOptions,Address,Subnet,Gateway,DNS,Roles,Tasks | ConvertTo-Json | Out-File -FilePath "D:\Deployment\Controll\$MACAddress.json"
+    $Server | ConvertTo-Json -Depth 5 | Out-File -FilePath "D:\Deployment\Controll\$MACAddress.json"
 
 }
 
